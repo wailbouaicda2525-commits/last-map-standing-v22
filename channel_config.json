@@ -1,0 +1,29 @@
+{
+  "channel_name": "LAST MAP STANDING",
+  "handle": "@LastMapStanding",
+  "style": "saul_bass_paper_cut_atlas",
+  "voice": "en-US-AndrewNeural",
+  "voice_fallbacks": [
+    "en-US-ChristopherNeural",
+    "en-US-GuyNeural"
+  ],
+  "voice_rate_short": "+8%",
+  "voice_rate_long": "+3%",
+  "voice_pitch": "-2Hz",
+  "category_id": "27",
+  "short_hashtags": "#Shorts #MapSimulation #Geography #USStates #WorldMap #LastMapStanding #WhatIf",
+  "long_hashtags": "#MapSimulation #Geography #Economics #USStates #WorldMap #LastMapStanding #DataDocumentary",
+  "default_tags": [
+    "map simulation",
+    "only 1 survives",
+    "50 us states",
+    "world map animation",
+    "geography simulation",
+    "what if simulation",
+    "us states survival",
+    "economics map",
+    "data visualization",
+    "last map standing"
+  ],
+  "description_footer": "🗺️ LAST MAP STANDING runs data-driven geographic, economic, and survival map simulations across all 50 U.S. states and 195 nations — Day 0 to Day 365 — until only one remains.\n\n📊 Every episode uses real public energy, agriculture, elevation, coastline, water, and economic datasets rendered as animated vector cartography.\n\n👇 Drop your state or country in the comments — did it survive this simulation?\n\nSubscribe for daily Map Simulation Shorts and full 10-14 minute documentaries every 2 days."
+}
