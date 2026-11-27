@@ -220,12 +220,43 @@ def _offline_longform_acts(sim):
     return acts
 
 
+NARRATIVE_STYLES = [
+    (
+        "cold_open_fact",
+        "Open with a surprising real-world infrastructure or geography fact that makes viewers rethink how fragile modern supply chains are, then smoothly launch the simulation.",
+        "Ask viewers which territory surprised them most in the data.",
+    ),
+    (
+        "day_one_dispatch",
+        "Open inside the very first 24 hours of the scenario like a calm, gripping logistics analyst tracking cascading failures on a live operations map.",
+        "Ask viewers how many days they think their own hometown would last.",
+    ),
+    (
+        "counterintuitive_twist",
+        "Open by immediately challenging conventional wisdom — point out that the largest or wealthiest economies are often the first to break under this specific stress test.",
+        "Ask viewers whether they agree with the winner or think the runner-up had the stronger real-world edge.",
+    ),
+    (
+        "geographic_paradox",
+        "Open by framing the hidden geographic paradox at the heart of the map — why coastlines, elevation, aquifers, or local power grids decide everything before politics ever matters.",
+        "Ask viewers what stress test scenario they want mapped next.",
+    ),
+]
+
+
+def _pick_narrative_style(scenario):
+    sid = scenario.get("id", "lms")
+    h = sum(ord(c) * (i + 3) for i, c in enumerate(sid))
+    return NARRATIVE_STYLES[h % len(NARRATIVE_STYLES)]
+
+
 def generate_short_script(sim):
     sc = sim["scenario"]
     f3 = ", ".join(e["name"].replace("United States of America", "USA") for e in sim["first_out"][:3])
     top3 = ", ".join(e["name"].replace("United States of America", "USA") for e in sim["top5"][:3])
     win = sim["winner"]["name"].replace("United States of America", "USA")
     ru = sim["runner_up"]["name"].replace("United States of America", "USA")
+    style_name, opening_dir, closing_dir = _pick_narrative_style(sc)
 
     prompt = (
         f"Write a gripping 115-to-135-word YouTube Short voiceover script for a data map simulation channel named 'Last Map Standing'.\n"
@@ -236,8 +267,10 @@ def generate_short_script(sim):
         f"Final 3 standing: {top3}\n"
         f"Runner-up (falls right at the end): {ru}\n"
         f"Last Survivor (Winner): {win}\n"
+        f"Narrative Style ({style_name}): {opening_dir}\n"
+        f"Closing Question: {closing_dir}\n"
         f"Rules: 100% factual adult tone (Wendover / RealLifeLore style), zero wars/violence/politics, punchy short sentences, "
-        f"mention Day 1, halfway mark, final two ({ru} vs {win}), reveal {win} as the lone survivor, and end with 'Would your home survive?'. "
+        f"cover early drop-offs, halfway collapse, final two ({ru} vs {win}), and reveal {win} as the lone survivor. "
         f"Plain spoken words ONLY."
     )
     txt = _llm_generate(prompt, min_words=85, max_tokens=450)
@@ -272,25 +305,32 @@ def compute_adaptive_minutes(sim):
 
 
 def generate_longform_acts(sim, target_minutes=None):
-    """Generate 6 structured acts with adaptive natural duration (9–18 min) tailored to each scenario."""
+    """Generate 6 structured acts with adaptive natural duration (9–18 min) and varied documentary framing."""
     sc = sim["scenario"]
     if target_minutes is None:
         target_minutes = compute_adaptive_minutes(sim)
     offline = _offline_longform_acts(sim)
-    # Try upgrading each act with Groq/Gemini for ultra-rich storytelling while keeping exact data facts!
     if not (os.environ.get("GROQ_API_KEY") or os.environ.get("GEMINI_API_KEY")):
         return offline
 
+    style_name, opening_dir, closing_dir = _pick_narrative_style(sc)
     acts = []
     words_per_act = int((target_minutes * 162) / len(offline))
     for base_act in offline:
+        extra_dir = ""
+        if base_act["act_id"] == 0:
+            extra_dir = f"Opening Direction ({style_name}): {opening_dir}\n"
+        elif base_act["act_id"] == len(offline) - 1:
+            extra_dir = f"Closing Direction: {closing_dir}\n"
+
         prompt = (
             f"Rewrite and expand this documentary chapter into approximately {words_per_act} words of captivating, "
             f"intelligent narration in the style of RealLifeLore & Wendover Productions.\n"
             f"Episode: {sc['title_long']}\n"
             f"Chapter: {base_act['label']}\n"
+            f"{extra_dir}"
             f"MANDATORY FACTS & NAMES TO KEEP ACCURATELY:\n{base_act['text']}\n\n"
-            f"Rules: Keep ALL entity names, numbers, and outcome order 100% faithful. Explain real geographic and economic causes vividly. "
+            f"Rules: Keep ALL entity names, numbers, and outcome order 100% faithful. Explain real geographic, infrastructure, and economic causes vividly with fresh phrasing. "
             f"100% clean/halal, zero wars/politics/crime. Output plain spoken English prose ONLY (no headings, no bullets, no brackets)."
         )
         llm_txt = _llm_generate(prompt, min_words=max(120, words_per_act - 85), max_tokens=1400)

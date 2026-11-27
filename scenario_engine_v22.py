@@ -45,10 +45,10 @@ CURATED_SCENARIOS = [
         "id": "us_zero_imports",
         "arena": "us_states",
         "mechanic": "collapse",
-        "title_long": "If Every U.S. State Sealed Its Borders With Zero Imports: Only 1 Survives",
-        "title_short": "If Every U.S. State Sealed Its Borders Forever — Only 1 Survives",
+        "title_long": "Why 49 U.S. States Collapse Without Imports — And the 1 That Doesn't",
+        "title_short": "What Happens If Every U.S. State Seals Its Borders Forever?",
         "thumb_top": "ZERO IMPORTS. 50 STATES.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "50 → 1",
         "thumb_stamp": "49 COLLAPSED",
         "rule_label": "TOTAL BORDER SEAL // DAY 0-365",
         "weights": {"trade_indep": 0.35, "food": 0.30, "energy": 0.20, "water": 0.15, "pop_penalty": 0.32},
@@ -62,10 +62,10 @@ CURATED_SCENARIOS = [
         "id": "us_50k_salary",
         "arena": "us_states",
         "mechanic": "collapse",
-        "title_long": "Surviving on $50,000 a Year in Every U.S. State: Only 1 Survives",
-        "title_short": "Living on $50,000 a Year Across America — Only 1 State Survives",
+        "title_long": "Can You Actually Survive on a $50,000 Salary Across All 50 States?",
+        "title_short": "Living on $50,000 a Year Across All 50 States — Where Do You Last?",
         "thumb_top": "$50K SALARY. 50 STATES.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "WHO LASTS?",
         "thumb_stamp": "49 PRICED OUT",
         "rule_label": "COST OF LIVING TEST // $50K/YR",
         "weights": {"afford": 0.50, "energy": 0.15, "food": 0.20, "water": 0.15, "pop_penalty": 0.15},
@@ -79,8 +79,8 @@ CURATED_SCENARIOS = [
         "id": "us_laser_diagonal",
         "arena": "us_states",
         "mechanic": "laser_line",
-        "title_long": "If a Sweeping Line Touches Your U.S. State, It Is Deleted: Only 1 Survives",
-        "title_short": "If This Line Touches Your State, It's Deleted — Only 1 Survives",
+        "title_long": "Watch a 32-Degree Line Erase All 50 States — Which Corner Holds Out Last?",
+        "title_short": "One Sweeping Line Erases America — Which State Holds Out Last?",
         "thumb_top": "LINE TOUCHES = DELETED",
         "thumb_pill": "50 STATES",
         "thumb_stamp": "49 ERASED",
@@ -96,8 +96,8 @@ CURATED_SCENARIOS = [
         "id": "us_shrinking_zone_heartland",
         "arena": "us_states",
         "mechanic": "shrinking_zone",
-        "title_long": "If Your U.S. State Is Outside the Shrinking Safe Zone, It Is Deleted (50 to 1)",
-        "title_short": "Outside the Shrinking Zone = Deleted: Which U.S. State Survives?",
+        "title_long": "50 States Trapped Inside a Shrinking Safe Zone: Who Makes It to Round 50?",
+        "title_short": "Outside the Shrinking Zone = Gone: Which U.S. State Wins?",
         "thumb_top": "OUTSIDE ZONE = DELETED",
         "thumb_pill": "ONLY 1 LEFT",
         "thumb_stamp": "49 ELIMINATED",
@@ -113,10 +113,10 @@ CURATED_SCENARIOS = [
         "id": "us_ocean_rise_100m",
         "arena": "us_states",
         "mechanic": "elevation_flood",
-        "title_long": "If Ocean Levels Rose 100 Meters Across America: Day 0 to Day 1000 (Only 1 Survives)",
-        "title_short": "If Oceans Rose 100 Meters in America — Only 1 State Survives",
+        "title_long": "+100m Rising Oceans Across America: Mapping Every State That Goes Under",
+        "title_short": "If Oceans Rose 100 Meters Across America, Which State Stays Dry?",
         "thumb_top": "+100M OCEANS. USA.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "DAY 1,000",
         "thumb_stamp": "49 FLOODED",
         "rule_label": "SEA LEVEL +100M // DAY 0-1000",
         "weights": {"elev_norm": 0.55, "water": 0.15, "food": 0.15, "energy": 0.15, "pop_penalty": 0.18},
@@ -130,10 +130,10 @@ CURATED_SCENARIOS = [
         "id": "us_extreme_freeze",
         "arena": "us_states",
         "mechanic": "collapse",
-        "title_long": "If America Froze by -25°C Overnight: Day 0 to Day 365 (Only 1 State Survives)",
-        "title_short": "If America Dropped -25°C Overnight — Only 1 State Survives",
+        "title_long": "America Drops -25°C Overnight: Which States Survive a Year of Deep Freeze?",
+        "title_short": "America Freezes -25°C Overnight — Watch 49 States Go Offline",
         "thumb_top": "-25°C FREEZE. 50 STATES.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "365 DAYS",
         "thumb_stamp": "49 FROZEN OUT",
         "rule_label": "ARCTIC FREEZE -25C // DAY 0-365",
         "weights": {"cold_res": 0.42, "energy": 0.30, "food": 0.15, "water": 0.13, "pop_penalty": 0.25},
@@ -147,10 +147,10 @@ CURATED_SCENARIOS = [
         "id": "us_extreme_heat",
         "arena": "us_states",
         "mechanic": "collapse",
-        "title_long": "If America Heated Up by +15°C Overnight: Only 1 U.S. State Survives",
-        "title_short": "If Every U.S. State Got +15°C Hotter — Only 1 Survives",
+        "title_long": "A +15°C Heat Dome Hits All 50 States: Where Does America Run Dry First?",
+        "title_short": "America Heats Up +15°C Overnight — Which State Outlasts the Rest?",
         "thumb_top": "+15°C HEATWAVE. USA.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "LAST ONE",
         "thumb_stamp": "49 OVERHEATED",
         "rule_label": "HEAT DOME +15C // DAY 0-365",
         "weights": {"heat_res": 0.42, "water": 0.30, "energy": 0.15, "food": 0.13, "pop_penalty": 0.25},
@@ -165,10 +165,10 @@ CURATED_SCENARIOS = [
         "id": "world_oil_vanishes",
         "arena": "world",
         "mechanic": "collapse",
-        "title_long": "If Global Oil Vanished Tomorrow: Day 0 to Day 365 (Only 1 Country Survives)",
-        "title_short": "If Oil Disappeared From Earth Tomorrow — Only 1 Country Survives",
+        "title_long": "Day 1 to Day 365: The Last Country Standing When Global Oil Runs Dry",
+        "title_short": "If Oil Disappeared From Earth Tomorrow — Who Survives to Day 365?",
         "thumb_top": "ZERO OIL. 195 NATIONS.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "DAY 365",
         "thumb_stamp": "194 COLLAPSED",
         "rule_label": "GLOBAL OIL CUTOFF // DAY 0-365",
         "weights": {"energy": 0.40, "food": 0.25, "water": 0.15, "trade_indep": 0.20, "pop_penalty": 0.22},
@@ -182,10 +182,10 @@ CURATED_SCENARIOS = [
         "id": "world_cargo_ships_stop",
         "arena": "world",
         "mechanic": "collapse",
-        "title_long": "If All Cargo Ships Stopped Forever: Which Country Survives Longest?",
-        "title_short": "If Every Cargo Ship Stopped Forever — Only 1 Country Survives",
+        "title_long": "We Stopped Every Cargo Ship on Earth — Which Nation Outlasts Everyone?",
+        "title_short": "Every Cargo Ship Stops Forever — Watch Global Trade Collapse",
         "thumb_top": "ZERO CARGO SHIPS.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "195 → 1",
         "thumb_stamp": "194 CUT OFF",
         "rule_label": "GLOBAL SHIPPING HALT // DAY 0-365",
         "weights": {"trade_indep": 0.42, "food": 0.28, "energy": 0.20, "water": 0.10, "pop_penalty": 0.18},
@@ -199,10 +199,10 @@ CURATED_SCENARIOS = [
         "id": "world_earth_freezes",
         "arena": "world",
         "mechanic": "collapse",
-        "title_long": "If Earth Froze by -25°C Overnight: Day 0 to Day 365 (Only 1 Country Survives)",
-        "title_short": "If Earth Froze -25°C Overnight — Only 1 Country Survives",
+        "title_long": "What Happens When Earth Drops -25°C Overnight? (365-Day Data Simulation)",
+        "title_short": "Earth Drops -25°C Overnight — Which Country Keeps the Grid Alive?",
         "thumb_top": "EARTH FROZE -25°C.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "WHO WINS?",
         "thumb_stamp": "194 FROZEN OUT",
         "rule_label": "GLOBAL FREEZE -25C // DAY 0-365",
         "weights": {"cold_res": 0.38, "energy": 0.32, "food": 0.18, "water": 0.12, "pop_penalty": 0.20},
@@ -216,10 +216,10 @@ CURATED_SCENARIOS = [
         "id": "world_never_rains",
         "arena": "world",
         "mechanic": "collapse",
-        "title_long": "If It Never Rained Again on Earth: Day 0 to Day 1000 (Only 1 Country Survives)",
-        "title_short": "If Rain Stopped Forever on Earth — Only 1 Country Survives",
+        "title_long": "1,000 Days Without a Single Drop of Rain: Mapping Earth's Last Survivors",
+        "title_short": "If Rain Stopped Forever on Earth, Which Country Runs Out Last?",
         "thumb_top": "ZERO RAIN. DAY 1,000.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "1 LEFT",
         "thumb_stamp": "194 DRIED OUT",
         "rule_label": "ZERO RAINFALL // DAY 0-1000",
         "weights": {"water": 0.48, "food": 0.22, "energy": 0.15, "trade_indep": 0.15, "pop_penalty": 0.24},
@@ -233,10 +233,10 @@ CURATED_SCENARIOS = [
         "id": "world_shrinking_zone_atlantic",
         "arena": "world",
         "mechanic": "shrinking_zone",
-        "title_long": "If Your Country Is Outside the Shrinking Circle, It Is Deleted: Only 1 Survives",
-        "title_short": "Outside the Circle = Deleted: Only 1 Country Survives",
+        "title_long": "A Collapsing Circle Across 195 Nations: Which Geography Survives the Cut?",
+        "title_short": "Outside the Circle = Erased: Watch 195 Countries Shrink to 1",
         "thumb_top": "OUTSIDE ZONE = DELETED",
-        "thumb_pill": "195 TO 1",
+        "thumb_pill": "195 → 1",
         "thumb_stamp": "194 ERASED",
         "rule_label": "SHRINKING CIRCLE // 195 TO 1",
         "zone_center": [0.49, 0.33],
@@ -250,10 +250,10 @@ CURATED_SCENARIOS = [
         "id": "world_laser_line_sweep",
         "arena": "world",
         "mechanic": "laser_line",
-        "title_long": "Every 30 Seconds a Line Sweeps the World Map — If It Touches Your Country, You're Out",
-        "title_short": "If This Line Touches Your Country, It's Deleted — Only 1 Survives",
+        "title_long": "One Line Sweeps Across Every Continent — Which Country Escapes Until the End?",
+        "title_short": "One Line Sweeps the World Map — Which Nation Escapes Last?",
         "thumb_top": "1 LINE ERASES THE MAP",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "LAST ONE",
         "thumb_stamp": "194 DELETED",
         "rule_label": "SWEEPING LASER LINE // 195 TO 1",
         "line_angle_deg": 24,
@@ -268,8 +268,8 @@ CURATED_SCENARIOS = [
         "id": "europe_zero_gas",
         "arena": "europe",
         "mechanic": "collapse",
-        "title_long": "If Europe Lost All Imported Energy Tomorrow: Day 0 to Day 365 (Only 1 Survives)",
-        "title_short": "If Europe Lost Imported Energy Tomorrow — Only 1 Country Survives",
+        "title_long": "Zero External Energy in Europe: Which Nation Keeps the Lights On All Winter?",
+        "title_short": "Europe Loses All Energy Imports Tomorrow — Who Stays Powered?",
         "thumb_top": "ZERO ENERGY IMPORTS.",
         "thumb_pill": "EUROPE",
         "thumb_stamp": "ONLY 1 LEFT",
@@ -285,10 +285,10 @@ CURATED_SCENARIOS = [
         "id": "americas_zero_trade",
         "arena": "americas",
         "mechanic": "collapse",
-        "title_long": "If Every Country in the Americas Stopped Trading Forever: Only 1 Survives",
-        "title_short": "If Every Country in the Americas Closed Its Borders — Only 1 Survives",
+        "title_long": "Total Border Seal Across the Americas: Which Country Is Truly Self-Sufficient?",
+        "title_short": "Every Border in the Americas Freezes Shut — Who Outlasts the Year?",
         "thumb_top": "ZERO TRADE. AMERICAS.",
-        "thumb_pill": "1 SURVIVES",
+        "thumb_pill": "DAY 365",
         "thumb_stamp": "CUT OFF",
         "rule_label": "AMERICAS ISOLATION // DAY 0-365",
         "weights": {"trade_indep": 0.38, "food": 0.28, "energy": 0.22, "water": 0.12, "pop_penalty": 0.18},
@@ -419,23 +419,41 @@ def build_infinite_catalog():
     catalog = list(CURATED_SCENARIOS)
 
     # 1) Systems x Arenas x Stress Horizons (30 x 4 x 3 = 360 unique survival collapse scenarios)
+    _PILLS_SYS = ["1 LEFT", "WHO WINS?", "LAST ONE", "DATA SIM"]
     for h_label, h_days, h_pop_mult in HORIZONS:
-        for sys_name, short_tag, m1, m2, elim_tag in MATRIX_SYSTEMS:
-            for arena_key, entity_singular, arena_badge, arena_phrase in MATRIX_ARENAS:
+        for sys_idx, (sys_name, short_tag, m1, m2, elim_tag) in enumerate(MATRIX_SYSTEMS):
+            for a_idx, (arena_key, entity_singular, arena_badge, arena_phrase) in enumerate(MATRIX_ARENAS):
                 sid = f"mx_{arena_key}_{h_days}_{hashlib.md5(sys_name.encode()).hexdigest()[:7]}"
                 w = {m1: 0.42, m2: 0.28, "water": 0.15, "energy": 0.15, "pop_penalty": 0.24 * h_pop_mult}
                 if m1 in ("energy", "water"):
                     w["food"] = 0.15
                 title_suffix = f"Day 0 to Day {h_days}" if h_days != 365 else "Day 0 to Day 365"
+                v = (sys_idx + a_idx + h_days) % 5
+                if v == 0:
+                    tl = f"What Happens When {sys_name} Shuts Down Across {arena_phrase}? ({h_days}-Day Sim)"
+                    ts = f"Zero {sys_name} for {h_days} Days — Which {entity_singular} Holds Out?"
+                elif v == 1:
+                    tl = f"Day 1 to Day {h_days}: Mapping Collapse Without {sys_name} in {arena_phrase}"
+                    ts = f"{sys_name} Vanishes Overnight — Watch {arena_phrase} Collapse"
+                elif v == 2:
+                    tl = f"Why Almost Every {entity_singular} Fails Without {sys_name} ({h_label})"
+                    ts = f"Can Your {entity_singular} Outlast {h_days} Days Without {sys_name}?"
+                elif v == 3:
+                    tl = f"We Cut Off {sys_name} Across {arena_phrase} — Here's Who Lasts to Day {h_days}"
+                    ts = f"No {sys_name} ({h_days} Days) — Which {entity_singular} Outlasts All?"
+                else:
+                    tl = f"Surviving {h_days} Days Without {sys_name}: {arena_phrase} Stress Test"
+                    ts = f"{sys_name} Stops ({h_days} Days) — Who Is Left Standing?"
+                pill = f"DAY {h_days}" if v % 2 == 0 else _PILLS_SYS[(sys_idx + a_idx) % len(_PILLS_SYS)]
                 catalog.append({
                     "id": sid,
                     "arena": arena_key,
                     "mechanic": "collapse",
-                    "title_long": f"If {sys_name} Stopped Across {arena_phrase} ({h_label}): Only 1 Survives",
-                    "title_short": f"{sys_name} Stops ({h_days} Days) — Which {entity_singular} Survives?",
+                    "title_long": tl,
+                    "title_short": ts,
                     "thumb_top": f"{short_tag}. {arena_badge}.",
-                    "thumb_pill": f"DAY {h_days}",
-                    "thumb_stamp": "ELIMINATED",
+                    "thumb_pill": pill,
+                    "thumb_stamp": elim_tag,
                     "rule_label": f"{short_tag} // {title_suffix.upper()}",
                     "weights": w,
                     "chart1_metric": (m1 if m1 != "elev_norm" else "elev_m", m1.replace("_", " ").upper() + " SCORE"),
@@ -446,18 +464,32 @@ def build_infinite_catalog():
                 })
 
     # 2) Economic, Climate & Elevation Threshold Cutoffs x Arenas (40 x 4 = 160)
-    for t_name, short_tag, m1, m2, elim_tag, max_d in MATRIX_THRESHOLDS:
-        for arena_key, entity_singular, arena_badge, arena_phrase in MATRIX_ARENAS:
+    _PILLS_TH = ["WHO LASTS?", "LAST ONE", "1 LEFT", "STRESS TEST"]
+    for t_idx, (t_name, short_tag, m1, m2, elim_tag, max_d) in enumerate(MATRIX_THRESHOLDS):
+        for a_idx, (arena_key, entity_singular, arena_badge, arena_phrase) in enumerate(MATRIX_ARENAS):
             sid = f"th_{arena_key}_{hashlib.md5(t_name.encode()).hexdigest()[:7]}"
             w = {m1: 0.48, m2: 0.24, "energy": 0.14, "water": 0.14, "pop_penalty": 0.22}
+            v = (t_idx + a_idx) % 4
+            if v == 0:
+                tl = f"{t_name} Hits {arena_phrase}: Mapping Which {entity_singular} Outlasts the Data"
+                ts = f"{t_name} Across {arena_phrase} — Who Makes It to Day {max_d}?"
+            elif v == 1:
+                tl = f"Can Any {entity_singular} Survive {t_name}? ({max_d}-Day Geographic Simulation)"
+                ts = f"{t_name} — Watch {arena_badge} Drop Out One by One"
+            elif v == 2:
+                tl = f"Ranking {arena_phrase} Under {t_name}: Who Falls First vs. Who Holds Out?"
+                ts = f"Which {entity_singular} Survives {t_name}?"
+            else:
+                tl = f"Day 0 to Day {max_d}: How {t_name} Reshapes {arena_phrase}"
+                ts = f"{t_name} Test — Does Your {entity_singular} Make the Cut?"
             catalog.append({
                 "id": sid,
                 "arena": arena_key,
                 "mechanic": "elevation_flood" if m1 == "elev_norm" else "collapse",
-                "title_long": f"{t_name} Across {arena_phrase}: Only 1 Survives (Map Simulation)",
-                "title_short": f"{t_name} — Only 1 {entity_singular} Survives",
+                "title_long": tl,
+                "title_short": ts,
                 "thumb_top": f"{short_tag}. {arena_badge}.",
-                "thumb_pill": "1 SURVIVES",
+                "thumb_pill": _PILLS_TH[v],
                 "thumb_stamp": elim_tag,
                 "rule_label": f"{short_tag} // DAY 0-{max_d}",
                 "weights": w,
@@ -486,17 +518,27 @@ def build_infinite_catalog():
         ("europe", "Danube Corridor", [0.64, 0.60]),
         ("americas", "Andes Ridge", [0.62, 0.76]),
     ]
-    for arena_key, zname, zcenter in (MATRIX_ZONES + EXTRA_ZONES):
+    for z_idx, (arena_key, zname, zcenter) in enumerate(MATRIX_ZONES + EXTRA_ZONES):
         badge = "50 STATES" if arena_key == "us_states" else ("EUROPE" if arena_key == "europe" else "WORLD MAP")
         sid = f"zone_{arena_key}_{hashlib.md5(zname.encode()).hexdigest()[:6]}"
+        zv = z_idx % 3
+        if zv == 0:
+            tl = f"A Shrinking Safe Zone Closes In on {zname}: Which Territory Holds Out Last?"
+            ts = f"Safe Zone Collapsing on {zname} — Who Makes It Inside?"
+        elif zv == 1:
+            tl = f"Outside the {zname} Safe Zone = Erased ({badge} Geographic Elimination)"
+            ts = f"Trapped Outside the {zname} Zone — Watch the Map Shrink"
+        else:
+            tl = f"The {zname} Collapse Ring: Tracking Every Territory Eliminated Round by Round"
+            ts = f"Shrinking Ring on {zname} — Who Survives the Final Cut?"
         catalog.append({
             "id": sid,
             "arena": arena_key,
             "mechanic": "shrinking_zone",
-            "title_long": f"Shrinking Safe Zone Centered on {zname}: Outside = Deleted (Only 1 Survives)",
-            "title_short": f"Safe Zone Collapsing on {zname} — Only 1 Survives",
+            "title_long": tl,
+            "title_short": ts,
             "thumb_top": f"SAFE ZONE: {zname.upper()}",
-            "thumb_pill": "1 SURVIVES",
+            "thumb_pill": ["WHO WINS?", "LAST ONE", badge][zv],
             "thumb_stamp": "OUT OF ZONE",
             "rule_label": f"SHRINKING ZONE // {badge}",
             "zone_center": zcenter,
@@ -508,16 +550,26 @@ def build_infinite_catalog():
         })
 
     # 4) Sweeping Laser Lines (4 arenas x 27 distinct compass angles = 108 unique geometric map sweeps)
-    for arena_key, entity_singular, arena_badge, arena_phrase in MATRIX_ARENAS:
-        for deg in MATRIX_LASER_ANGLES:
+    for a_idx, (arena_key, entity_singular, arena_badge, arena_phrase) in enumerate(MATRIX_ARENAS):
+        for d_idx, deg in enumerate(MATRIX_LASER_ANGLES):
             sid = f"laser_{arena_key}_{deg}"
             dir_name = f"{deg}-Degree Sweep"
+            lv = (a_idx + d_idx) % 3
+            if lv == 0:
+                tl = f"A {dir_name} Line Slices Across {arena_phrase}: Which {entity_singular} Escapes Last?"
+                ts = f"A {deg}° Line Sweeps {arena_phrase} — Who Survives Last?"
+            elif lv == 1:
+                tl = f"Mapping a {deg}° Geometric Sweep Across {arena_phrase} (Touch It = Out)"
+                ts = f"Touch This {deg}° Line = Erased: Watch {arena_badge} Vanish"
+            else:
+                tl = f"Which Corner of {arena_phrase} Outlasts a {dir_name} Line?"
+                ts = f"{dir_name} Across {arena_badge} — Does Your {entity_singular} Last?"
             catalog.append({
                 "id": sid,
                 "arena": arena_key,
                 "mechanic": "laser_line",
-                "title_long": f"A {dir_name} Line Crosses {arena_phrase}: Touch It = Deleted (Only 1 Survives)",
-                "title_short": f"A {dir_name} Line Erases the Map — Which {entity_singular} Survives Last?",
+                "title_long": tl,
+                "title_short": ts,
                 "thumb_top": f"{deg}° LASER SWEEP",
                 "thumb_pill": arena_badge,
                 "thumb_stamp": "DELETED",
@@ -533,20 +585,30 @@ def build_infinite_catalog():
     # 5) Pairwise Dual-Shock Scenarios (Two simultaneous crises across US States & World -> 600+ more unique episodes!)
     DUAL_A = MATRIX_SYSTEMS[:15]
     DUAL_B = MATRIX_THRESHOLDS[:10]
-    for sa_name, sa_tag, m1, _, elim1 in DUAL_A:
-        for tb_name, tb_tag, m2, _, elim2, _ in DUAL_B:
-            for arena_key, entity_singular, arena_badge, arena_phrase in MATRIX_ARENAS[:2]:
+    for i_a, (sa_name, sa_tag, m1, _, elim1) in enumerate(DUAL_A):
+        for i_b, (tb_name, tb_tag, m2, _, elim2, _) in enumerate(DUAL_B):
+            for a_idx, (arena_key, entity_singular, arena_badge, arena_phrase) in enumerate(MATRIX_ARENAS[:2]):
                 sid = f"dual_{arena_key}_{hashlib.md5((sa_tag + tb_tag).encode()).hexdigest()[:8]}"
                 w = {m1: 0.36, m2: 0.36, "water": 0.14, "energy": 0.14, "pop_penalty": 0.25}
+                dv = (i_a + i_b + a_idx) % 3
+                if dv == 0:
+                    tl = f"Compound Crisis: {sa_name} Fails During {tb_name} Across {arena_phrase}"
+                    ts = f"{sa_tag} + {tb_tag} Hit Together — Which {entity_singular} Holds Out?"
+                elif dv == 1:
+                    tl = f"What If {sa_name} Stopped AND {tb_name} Struck {arena_phrase} Simultaneously?"
+                    ts = f"Double Crisis: {sa_tag} + {tb_tag} — Who Survives to Day 365?"
+                else:
+                    tl = f"Double Stress Test ({arena_badge}): {sa_name} Collapse + {tb_name}"
+                    ts = f"{sa_tag} + {tb_tag} — Can Any {entity_singular} Outlast Both?"
                 catalog.append({
                     "id": sid,
                     "arena": arena_key,
                     "mechanic": "collapse",
-                    "title_long": f"Double Shock: {sa_name} Fails + {tb_name} ({arena_badge} — Only 1 Survives)",
-                    "title_short": f"{sa_tag} + {tb_tag} — Which {entity_singular} Survives?",
+                    "title_long": tl,
+                    "title_short": ts,
                     "thumb_top": f"{sa_tag} + {tb_tag}",
-                    "thumb_pill": "1 SURVIVES",
-                    "thumb_stamp": "DOUBLE SHOCK",
+                    "thumb_pill": ["DOUBLE SHOCK", "WHO WINS?", "DAY 365"][dv],
+                    "thumb_stamp": elim1,
                     "rule_label": f"{sa_tag} + {tb_tag} // DAY 0-365",
                     "weights": w,
                     "chart1_metric": (m1 if m1 != "elev_norm" else "elev_m", m1.replace("_", " ").upper() + " SCORE"),

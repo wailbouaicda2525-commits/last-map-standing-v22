@@ -16,7 +16,8 @@ from PIL import Image, ImageDraw
 from map_geometry_v22 import (
     PALETTE,
     load_arena_geometry,
-    make_saul_bass_paper_bg,
+    make_themed_bg,
+    get_theme_for_scenario,
     get_font,
     FONT_ANTON,
     FONT_BLACK,
@@ -251,10 +252,11 @@ def _aspect_box(x, y, w, h, arena):
 
 
 def render_fb_carousel_slides(sim, out_dir):
-    """Render 3 high-engagement 1080x1080 Saul Bass Paper-Cut Facebook Carousel Cards."""
+    """Render 3 high-engagement 1080x1080 themed Facebook Carousel Cards (V22.3 Multi-Theme)."""
     os.makedirs(out_dir, exist_ok=True)
     W, H = 1080, 1080
     sc = sim["scenario"]
+    th = get_theme_for_scenario(sc)
     geom = load_arena_geometry(sc["arena"])
     ents = sim["entities"]
     total = len(ents)
@@ -263,7 +265,7 @@ def render_fb_carousel_slides(sim, out_dir):
     unit = "STATES" if sc["arena"] == "us_states" else "COUNTRIES"
 
     # ---------------- SLIDE 1: HOOK MAP CARD ("WHO FALLS FIRST?") ----------------
-    bg1 = make_saul_bass_paper_bg(W, H, seed=41)
+    bg1 = make_themed_bg(W, H, theme=th, seed=41)
     arr1 = np.array(bg1, dtype=np.uint8)
     st_map = {}
     for i, e in enumerate(ents):
@@ -278,43 +280,43 @@ def render_fb_carousel_slides(sim, out_dir):
             st_map[e["name"]] = "eliminated"
 
     mb1 = _aspect_box(36, 260, W - 72, 560, sc["arena"])
-    draw_paper_cut_map_cv(arr1, geom, mb1, st_map, shadow_offset=(8, 10), border_w=3)
-    draw_mechanic_overlay_cv(arr1, sc, mb1, progress=0.68)
+    draw_paper_cut_map_cv(arr1, geom, mb1, st_map, shadow_offset=(8, 10), border_w=3, theme=th)
+    draw_mechanic_overlay_cv(arr1, sc, mb1, progress=0.68, theme=th)
 
     im1 = Image.fromarray(arr1, "RGB").convert("RGBA")
     d1 = ImageDraw.Draw(im1, "RGBA")
-    d1.rectangle([0, 0, W, 220], fill=PALETTE["ink_black"] + (255,))
-    d1.rectangle([0, 220, W, 234], fill=PALETTE["vermilion"] + (255,))
-    d1.text((48, 52), "LAST MAP STANDING  //  SWIPE FOR DATA →", font=get_font(FONT_MONO, 24), fill=PALETTE["warning_ochre"] + (255,))
+    d1.rectangle([0, 0, W, 220], fill=th["ink_black"] + (255,))
+    d1.rectangle([0, 220, W, 234], fill=th["vermilion"] + (255,))
+    d1.text((48, 52), "LAST MAP STANDING  //  SWIPE FOR DATA →", font=get_font(FONT_MONO, 24), fill=th["warning_ochre"] + (255,))
 
     top_t = sc.get("thumb_top", "ZERO POWER. 50 STATES.")
     f_t1 = get_font(FONT_ANTON, 82)
     while d1.textlength(top_t, font=f_t1) > W - 96:
         f_t1 = get_font(FONT_ANTON, f_t1.size - 4)
-    d1.text((48, 146), top_t, font=f_t1, fill=PALETTE["cream_text"] + (255,), anchor="lm")
+    d1.text((48, 146), top_t, font=f_t1, fill=th["header_text"] + (255,), anchor="lm")
 
-    stamp1 = make_stamp_image(f"{total - 1} ELIMINATED", w=410, h=96, angle=8, paper_fill=True)
+    stamp1 = make_stamp_image(f"{total - 1} ELIMINATED", w=410, h=96, angle=8, paper_fill=True, theme=th)
     im1.alpha_composite(stamp1, (W - stamp1.width - 34, H - 190 - stamp1.height // 2))
 
-    d1.rectangle([0, H - 122, W, H], fill=PALETTE["ink_black"] + (255,))
-    d1.rectangle([0, H - 122, 18, H], fill=PALETTE["vermilion"] + (255,))
+    d1.rectangle([0, H - 122, W, H], fill=th["ink_black"] + (255,))
+    d1.rectangle([0, H - 122, 18, H], fill=th["vermilion"] + (255,))
     d1.text((W // 2, H - 61), f"ONLY 1 OF {total} {unit} SURVIVES  •  SWIPE TO SEE WHY →",
-            font=get_font(FONT_BOLD, 30), fill=PALETTE["cream_text"] + (255,), anchor="mm")
+            font=get_font(FONT_BOLD, 30), fill=th["header_text"] + (255,), anchor="mm")
     p1 = os.path.join(out_dir, f"fb_slide1_{sc['id']}.jpg")
     im1.convert("RGB").save(p1, quality=93)
 
     # ---------------- SLIDE 2: REAL DATA BAR CHART CARD ----------------
-    bg2 = make_saul_bass_paper_bg(W, H, seed=42)
+    bg2 = make_themed_bg(W, H, theme=th, seed=42)
     im2 = bg2.convert("RGBA")
     d2 = ImageDraw.Draw(im2, "RGBA")
     c1 = sim["chart1"]
-    d2.rectangle([0, 0, W, 178], fill=PALETTE["ink_black"] + (255,))
-    d2.rectangle([0, 178, W, 190], fill=PALETTE["vermilion"] + (255,))
-    d2.text((48, 46), "SLIDE 2 / 3  //  REAL DATA BREAKDOWN", font=get_font(FONT_MONO, 24), fill=PALETTE["warning_ochre"] + (255,))
+    d2.rectangle([0, 0, W, 178], fill=th["ink_black"] + (255,))
+    d2.rectangle([0, 178, W, 190], fill=th["vermilion"] + (255,))
+    d2.text((48, 46), "SLIDE 2 / 3  //  REAL DATA BREAKDOWN", font=get_font(FONT_MONO, 24), fill=th["warning_ochre"] + (255,))
     f_c2 = get_font(FONT_ANTON, 64)
     while d2.textlength(c1["title"], font=f_c2) > W - 96:
         f_c2 = get_font(FONT_ANTON, f_c2.size - 4)
-    d2.text((48, 124), c1["title"], font=f_c2, fill=PALETTE["cream_text"] + (255,), anchor="lm")
+    d2.text((48, 124), c1["title"], font=f_c2, fill=th["header_text"] + (255,), anchor="lm")
 
     rows = c1["rows"][:6]
     max_v = max([r["value"] for r in rows] + [1.0])
@@ -325,76 +327,74 @@ def render_fb_carousel_slides(sim, out_dir):
     for idx, row in enumerate(rows):
         ry = y0 + idx * row_h
         bw = max(18, int((row["value"] / max_v) * bmax))
-        col = PALETTE["alive_blue"] if row["survived"] else PALETTE["vermilion"]
+        col = th["alive_blue"] if row["survived"] else th["vermilion"]
         tag = "SURVIVOR TIER" if row["survived"] else "EARLY COLLAPSE"
-        d2.text((bx0 - 24, ry + 28), row["name"].upper()[:14], font=get_font(FONT_BLACK, 28), fill=PALETTE["ink_black"] + (255,), anchor="rm")
+        d2.text((bx0 - 24, ry + 28), short_name(row["name"]).upper()[:15], font=get_font(FONT_BLACK, 27), fill=th["body_text"] + (255,), anchor="rm")
         d2.text((bx0 - 24, ry + 58), tag, font=get_font(FONT_MONO, 17), fill=col + (255,), anchor="rm")
-        d2.rectangle([bx0 + 7, ry + 14, bx0 + bw + 7, ry + 70], fill=PALETTE["shadow_warm"] + (255,))
-        d2.rectangle([bx0, ry + 8, bx0 + bw, ry + 64], fill=col + (255,), outline=PALETTE["ink_black"] + (255,), width=3)
-        d2.text((bx0 + bw + 18, ry + 36), f"{row['value']:.1f}", font=get_font(FONT_ANTON, 40), fill=PALETTE["ink_black"] + (255,), anchor="lm")
+        d2.rectangle([bx0 + 7, ry + 14, bx0 + bw + 7, ry + 70], fill=th["shadow_warm"] + (255,))
+        d2.rectangle([bx0, ry + 8, bx0 + bw, ry + 64], fill=col + (255,), outline=th["ink_black"] + (255,), width=3)
+        d2.text((bx0 + bw + 18, ry + 36), f"{row['value']:.1f}", font=get_font(FONT_ANTON, 40), fill=th["body_text"] + (255,), anchor="lm")
 
-    d2.rectangle([0, H - 116, W, H], fill=PALETTE["ink_black"] + (255,))
-    d2.rectangle([0, H - 116, 18, H], fill=PALETTE["vermilion"] + (255,))
+    d2.rectangle([0, H - 116, W, H], fill=th["ink_black"] + (255,))
+    d2.rectangle([0, H - 116, 18, H], fill=th["vermilion"] + (255,))
     d2.text((W // 2, H - 58), "SWIPE FOR THE FINAL 2 HEAD-TO-HEAD SHOWDOWN →",
-            font=get_font(FONT_BOLD, 30), fill=PALETTE["cream_text"] + (255,), anchor="mm")
+            font=get_font(FONT_BOLD, 30), fill=th["header_text"] + (255,), anchor="mm")
     p2 = os.path.join(out_dir, f"fb_slide2_{sc['id']}.jpg")
     im2.convert("RGB").save(p2, quality=93)
 
     # ---------------- SLIDE 3: FINAL 2 VS SHOWDOWN CLIFFHANGER ----------------
-    bg3 = make_saul_bass_paper_bg(W, H, seed=43)
+    bg3 = make_themed_bg(W, H, theme=th, seed=43)
     im3 = bg3.convert("RGBA")
     d3 = ImageDraw.Draw(im3, "RGBA")
     ru_n = short_name(ru["name"]).upper()
     win_n = short_name(win["name"]).upper()
 
-    d3.rectangle([0, 0, W, 178], fill=PALETTE["ink_black"] + (255,))
-    d3.rectangle([0, 178, W, 190], fill=PALETTE["vermilion"] + (255,))
-    d3.text((W // 2, 46), "SLIDE 3 / 3  //  FINAL 2 SURVIVORS", font=get_font(FONT_MONO, 24), fill=PALETTE["warning_ochre"] + (255,), anchor="mm")
+    d3.rectangle([0, 0, W, 178], fill=th["ink_black"] + (255,))
+    d3.rectangle([0, 178, W, 190], fill=th["vermilion"] + (255,))
+    d3.text((W // 2, 46), "SLIDE 3 / 3  //  FINAL 2 SURVIVORS", font=get_font(FONT_MONO, 24), fill=th["warning_ochre"] + (255,), anchor="mm")
     vs_hdr = f"{ru_n}  VS  {win_n}"
     f_vs = get_font(FONT_ANTON, 68)
     while d3.textlength(vs_hdr, font=f_vs) > W - 80:
         f_vs = get_font(FONT_ANTON, f_vs.size - 4)
-    d3.text((W // 2, 124), vs_hdr, font=f_vs, fill=PALETTE["cream_text"] + (255,), anchor="mm")
+    d3.text((W // 2, 124), vs_hdr, font=f_vs, fill=th["header_text"] + (255,), anchor="mm")
 
-    # Fighter boxes
     cx = W // 2
-    d3.rectangle([42, 224, cx - 54, 342], fill=PALETTE["ink_black"] + (255,))
-    d3.rectangle([42, 224, 60, 342], fill=PALETTE["warning_ochre"] + (255,))
-    d3.text((80, 250), "FINALIST A", font=get_font(FONT_MONO, 20), fill=PALETTE["warning_ochre"] + (255,))
-    d3.text((80, 278), ru_n[:13], font=get_font(FONT_ANTON, 46), fill=PALETTE["cream_text"] + (255,))
+    d3.rectangle([42, 224, cx - 54, 342], fill=th["ink_black"] + (255,))
+    d3.rectangle([42, 224, 60, 342], fill=th["warning_ochre"] + (255,))
+    d3.text((80, 250), "FINALIST A", font=get_font(FONT_MONO, 20), fill=th["warning_ochre"] + (255,))
+    d3.text((80, 278), ru_n[:13], font=get_font(FONT_ANTON, 46), fill=th["header_text"] + (255,))
 
-    d3.rectangle([cx + 54, 224, W - 42, 342], fill=PALETTE["alive_blue"] + (255,))
-    d3.rectangle([W - 60, 224, W - 42, 342], fill=PALETTE["vermilion"] + (255,))
-    d3.text((W - 80, 250), "FINALIST B", font=get_font(FONT_MONO, 20), fill=PALETTE["warning_ochre"] + (255,), anchor="ra")
-    d3.text((W - 80, 278), win_n[:13], font=get_font(FONT_ANTON, 46), fill=PALETTE["cream_text"] + (255,), anchor="ra")
+    d3.rectangle([cx + 54, 224, W - 42, 342], fill=th["ink_black"] + (255,))
+    d3.rectangle([W - 60, 224, W - 42, 342], fill=th["alive_blue"] + (255,))
+    d3.text((W - 80, 250), "FINALIST B", font=get_font(FONT_MONO, 20), fill=th["stat_ok"] + (255,), anchor="ra")
+    d3.text((W - 80, 278), win_n[:13], font=get_font(FONT_ANTON, 46), fill=th["header_text"] + (255,), anchor="ra")
 
-    d3.ellipse([cx - 46, 237, cx + 46, 329], fill=PALETTE["vermilion"] + (255,), outline=PALETTE["ink_black"] + (255,), width=5)
-    d3.text((cx, 283), "VS", font=get_font(FONT_ANTON, 52), fill=PALETTE["cream_text"] + (255,), anchor="mm")
+    d3.ellipse([cx - 46, 237, cx + 46, 329], fill=th["vermilion"] + (255,), outline=th["ink_black"] + (255,), width=5)
+    d3.text((cx, 283), "VS", font=get_font(FONT_ANTON, 52), fill=th["header_text"] + (255,), anchor="mm")
 
-    # 4 Symmetrical VS Bars
     vy0 = 398
     vgap = 136
     max_half = 395
     for idx, vm in enumerate(sim["vs_metrics"]):
         my = vy0 + idx * vgap
-        d3.rectangle([cx - 145, my - 22, cx + 145, my + 12], fill=PALETTE["ink_black"] + (255,))
-        d3.text((cx, my - 5), vm["label"], font=get_font(FONT_BLACK, 22), fill=PALETTE["cream_text"] + (255,), anchor="mm")
+        d3.rectangle([cx - 145, my - 22, cx + 145, my + 12], fill=th["ink_black"] + (255,))
+        d3.text((cx, my - 5), vm["label"], font=get_font(FONT_BLACK, 22), fill=th["header_text"] + (255,), anchor="mm")
 
         lw = max(14, int((vm["left_val"] / 100.0) * max_half))
         rw = max(14, int((vm["right_val"] / 100.0) * max_half))
         lx1 = cx - 18
         lx0 = lx1 - lw
-        d3.rectangle([lx0, my + 22, lx1, my + 72], fill=PALETTE["warning_ochre"] + (255,), outline=PALETTE["ink_black"] + (255,), width=3)
-        d3.text((lx0 - 14, my + 47), str(vm["left_val"]), font=get_font(FONT_ANTON, 38), fill=PALETTE["ink_black"] + (255,), anchor="rm")
+        d3.rectangle([lx0, my + 22, lx1, my + 72], fill=th["warning_ochre"] + (255,), outline=th["ink_black"] + (255,), width=3)
+        d3.text((lx0 - 14, my + 47), str(vm["left_val"]), font=get_font(FONT_ANTON, 38), fill=th["body_text"] + (255,), anchor="rm")
 
         rx0 = cx + 18
         rx1 = rx0 + rw
-        d3.rectangle([rx0, my + 22, rx1, my + 72], fill=PALETTE["alive_blue"] + (255,), outline=PALETTE["ink_black"] + (255,), width=3)
-        d3.text((rx1 + 14, my + 47), str(vm["right_val"]), font=get_font(FONT_ANTON, 38), fill=PALETTE["ink_black"] + (255,), anchor="lm")
+        d3.rectangle([rx0, my + 22, rx1, my + 72], fill=th["alive_blue"] + (255,), outline=th["ink_black"] + (255,), width=3)
+        d3.text((rx1 + 14, my + 47), str(vm["right_val"]), font=get_font(FONT_ANTON, 38), fill=th["body_text"] + (255,), anchor="lm")
 
-    d3.rectangle([0, H - 116, W, H], fill=PALETTE["vermilion"] + (255,))
+    d3.rectangle([0, H - 116, W, H], fill=th["vermilion"] + (255,))
     d3.text((W // 2, H - 58), f"WHO WINS? {ru_n} OR {win_n}? COMMENT BELOW!",
-            font=get_font(FONT_ANTON, 44), fill=PALETTE["cream_text"] + (255,), anchor="mm")
+            font=get_font(FONT_ANTON, 44), fill=th["header_text"] + (255,), anchor="mm")
     p3 = os.path.join(out_dir, f"fb_slide3_{sc['id']}.jpg")
     im3.convert("RGB").save(p3, quality=93)
 

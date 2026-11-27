@@ -13,7 +13,7 @@ import tempfile
 
 import imageio_ffmpeg
 
-from map_geometry_v22 import BASE_DIR
+from map_geometry_v22 import BASE_DIR, get_theme_for_scenario, get_layout_variant
 from scenario_engine_v22 import pick_next_scenario, simulate_scenario, mark_published
 from scriptwriter_v22 import generate_short_script, generate_longform_acts, compute_adaptive_minutes
 from voice_sfx_v22 import (
@@ -46,9 +46,21 @@ def load_config():
         return json.load(f)
 
 
+def pick_episode_voice(cfg, sc):
+    """Rotate cleanly across 3 flagship US documentary narrators so episodes feel bespoke."""
+    roster = cfg.get("voice_roster") or [cfg.get("voice", "en-US-AndrewNeural")]
+    sid = sc.get("id", "lms")
+    h = sum(ord(c) * (i + 5) for i, c in enumerate(sid))
+    primary = roster[h % len(roster)]
+    fallbacks = [v for v in (cfg.get("voice_fallbacks") or roster) if v != primary]
+    return primary, fallbacks
+
+
 def run_short(cfg, sim, out_dir, dry_run=False, privacy="public"):
     sc = sim["scenario"]
-    print(f"[SHORT] Scenario: {sc['id']} | {sc['title_short']}")
+    th = get_theme_for_scenario(sc)
+    ep_voice, ep_fallbacks = pick_episode_voice(cfg, sc)
+    print(f"[SHORT] Scenario: {sc['id']} | Theme: {th['name']} | Voice: {ep_voice} | {sc['title_short']}")
 
     script = generate_short_script(sim)
     print(f"[SHORT] Script ready ({len(script.split())} words)")
@@ -61,8 +73,8 @@ def run_short(cfg, sim, out_dir, dry_run=False, privacy="public"):
     words = synthesize_voice(
         script,
         voice_mp3,
-        voice=cfg["voice"],
-        fallbacks=cfg.get("voice_fallbacks"),
+        voice=ep_voice,
+        fallbacks=ep_fallbacks,
         rate=cfg.get("voice_rate_short", "+8%"),
         pitch=cfg.get("voice_pitch", "-2Hz"),
     )
@@ -109,9 +121,12 @@ def run_short(cfg, sim, out_dir, dry_run=False, privacy="public"):
 
 def run_longform(cfg, sim, out_dir, dry_run=False, demo_fast=False, privacy="public"):
     sc = sim["scenario"]
-    print(f"[LONGFORM] Scenario: {sc['id']} | {sc['title_long']}")
+    th = get_theme_for_scenario(sc)
+    layout = get_layout_variant(sc)
+    ep_voice, ep_fallbacks = pick_episode_voice(cfg, sc)
+    print(f"[LONGFORM] Scenario: {sc['id']} | Theme: {th['name']} | Layout: {layout} | Voice: {ep_voice} | {sc['title_long']}")
 
-    # 1) Generate Behance Saul Bass Poster Thumbnail
+    # 1) Generate V22.3 Multi-Theme Swiss Editorial Poster Thumbnail
     thumb_jpg = os.path.join(out_dir, f"LMS_THUMB_{sc['id']}.jpg")
     render_thumbnail_16x9(sim, thumb_jpg)
     print(f"[LONGFORM] Thumbnail rendered: {thumb_jpg}")
@@ -150,8 +165,8 @@ def run_longform(cfg, sim, out_dir, dry_run=False, demo_fast=False, privacy="pub
         awords = synthesize_voice(
             act["text"],
             amp3,
-            voice=cfg["voice"],
-            fallbacks=cfg.get("voice_fallbacks"),
+            voice=ep_voice,
+            fallbacks=ep_fallbacks,
             rate=cfg.get("voice_rate_long", "+3%"),
             pitch=cfg.get("voice_pitch", "-2Hz"),
         )
@@ -172,7 +187,7 @@ def run_longform(cfg, sim, out_dir, dry_run=False, demo_fast=False, privacy="pub
     concat_txt = os.path.join(out_dir, "acts_concat.txt")
     with open(concat_txt, "w", encoding="utf-8") as f:
         for p in act_mp3s:
-            f.write(f"file '{p}'\n")
+            f.write(f"file '{os.path.abspath(p)}'\n")
     full_voice = os.path.join(out_dir, "long_voice.mp3")
     subprocess.run(
         [FFMPEG, "-y", "-f", "concat", "-safe", "0", "-i", concat_txt, "-c", "copy", full_voice],

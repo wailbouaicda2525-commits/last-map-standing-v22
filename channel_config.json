@@ -3,7 +3,14 @@
   "handle": "@LastMapStanding",
   "style": "saul_bass_paper_cut_atlas",
   "voice": "en-US-AndrewNeural",
+  "voice_roster": [
+    "en-US-AndrewNeural",
+    "en-US-BrianNeural",
+    "en-US-ChristopherNeural"
+  ],
   "voice_fallbacks": [
+    "en-US-AndrewNeural",
+    "en-US-BrianNeural",
     "en-US-ChristopherNeural",
     "en-US-GuyNeural"
   ],
