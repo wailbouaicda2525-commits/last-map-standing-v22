@@ -166,6 +166,6 @@ def mix_voice_and_sfx(voice_mp3, sfx_wav, out_m4a, total_dur):
         "-i", voice_mp3,
         "-i", sfx_wav,
         "-filter_complex",
-        "[0:a]volume=1.18,apad=pad_dur=2.0[v];[1:a]volume=0.78[s];[v][s]amix=inputs=2:duration=shortest:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[out]",
+        f"[0:a]volume=1.18,apad=whole_dur={total_dur:.3f}[v];[1:a]volume=0.78[s];[v][s]amix=inputs=2:duration=shortest:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[out]",
         "-map", "[out]", "-c:a", "aac", "-b:a", "192k", "-t", f"{total_dur:.3f}", out_m4a
     ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

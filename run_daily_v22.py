@@ -6,16 +6,24 @@ Usage:
   python3 run_daily_v22.py --mode longform --dry-run --demo-fast
 """
 import argparse
+import datetime
 import json
 import os
+import random
 import subprocess
 import tempfile
+import time
 
 import imageio_ffmpeg
 
 from map_geometry_v22 import BASE_DIR, get_theme_for_scenario, get_layout_variant
 from scenario_engine_v22 import pick_next_scenario, simulate_scenario, mark_published
-from scriptwriter_v22 import generate_short_script, generate_longform_acts, compute_adaptive_minutes
+from scriptwriter_v22 import (
+    generate_short_script,
+    generate_tiktok_65s_script,
+    generate_longform_acts,
+    compute_adaptive_minutes,
+)
 from voice_sfx_v22 import (
     synthesize_voice,
     get_audio_duration,
@@ -29,6 +37,13 @@ from renderer_v22_saul_bass import (
     render_longform_16x9,
 )
 from uploader_v22 import upload_video_to_youtube, send_telegram
+from tiktok_v22 import (
+    buffer_is_configured,
+    publish_tiktok_via_buffer,
+    tiktok_is_configured,
+    upload_tiktok_inbox_draft,
+    build_tiktok_seo_caption,
+)
 from facebook_v22 import (
     fb_is_configured,
     upload_fb_reel,
@@ -91,8 +106,17 @@ def run_short(cfg, sim, out_dir, dry_run=False, privacy="public"):
     synthesize_saul_bass_soundscape(total_dur, elim_cues, [1.8, t_win - 1.2], t_win, sfx_wav)
     mix_voice_and_sfx(voice_mp3, sfx_wav, mixed_m4a, total_dur)
 
-    print(f"[SHORT] Rendering {total_dur:.1f}s V22.4 Themed Short (1080x1920)...")
-    render_short_9x16(sim, words, mixed_m4a, total_dur, out_mp4, fps=30)
+    print(f"[SHORT] Rendering {total_dur:.1f}s V22.8 Themed Short + Subscribe CTA (1080x1920)...")
+    render_short_9x16(
+        sim,
+        words,
+        mixed_m4a,
+        total_dur,
+        out_mp4,
+        fps=30,
+        show_vs_showdown=False,
+        cta_label="NEXT MAP TOMORROW  •  SUBSCRIBE",
+    )
     print(f"[SHORT] Render complete: {out_mp4} ({os.path.getsize(out_mp4) / 1e6:.2f} MB)")
 
     if dry_run:
@@ -297,10 +321,165 @@ def run_fb_text(cfg, sim, dry_run=False):
     return msg, post_id
 
 
+def generate_random_tiktok_delays(n_batch):
+    """
+    Generate 100% unpredictable, human-like random publish delays (in minutes from batch start)
+    for TikTok PUBLIC autopilot (uses OS entropy via SystemRandom -> no two days ever repeat!).
+    Example for n_batch=4:
+      Start +42m -> gap +4h 35m -> gap +3h 10m -> gap +5h 08m -> (~10h 25m random overnight gap!)
+    Single manual test (n_batch=1) posts immediately (0 min).
+    """
+    if n_batch <= 1:
+        return [0]
+
+    rng = random.SystemRandom()
+    # Random start offset for Video #1 so even the first daily post never lands on the same minute
+    first_delay = 0 if rng.random() < 0.20 else rng.randint(15, 135)
+
+    if n_batch == 2:
+        gaps = [rng.randint(240, 540)]  # 4h00m - 9h00m
+        max_span = 720
+    elif n_batch == 3:
+        gaps = [rng.randint(185, 345), rng.randint(235, 455)]
+        rng.shuffle(gaps)
+        max_span = 960  # <= 16h span -> leaves ~8h-12h random overnight pause
+    elif n_batch == 4:
+        # Mirrors exact organic human rhythm: e.g. 4h35m, 3h10m, 5h08m + ~10h overnight!
+        gaps = [
+            rng.randint(160, 235),  # ~2h40m - 3h55m (e.g. 3h10m)
+            rng.randint(220, 310),  # ~3h40m - 5h10m (e.g. 4h35m)
+            rng.randint(255, 365),  # ~4h15m - 6h05m (e.g. 5h08m)
+        ]
+        rng.shuffle(gaps)
+        max_span = 930  # <= 15h30m span -> leaves ~8h30m-11h30m random overnight rest!
+    else:
+        gaps = [rng.randint(150, 255) for _ in range(n_batch - 1)]
+        rng.shuffle(gaps)
+        max_span = 1020
+
+    # Keep total daily window strictly under max_span so today's last post never collides with tomorrow
+    if sum(gaps) > max_span:
+        scale = max_span / float(sum(gaps))
+        gaps = [max(135, int(round(g * scale))) for g in gaps]
+
+    delays = [first_delay]
+    for g in gaps:
+        delays.append(delays[-1] + g)
+    return delays
+
+
+def run_tiktok_65s(cfg, sim, out_dir, dry_run=False, batch_idx=1, batch_total=1, delay_minutes=0):
+    """
+    Generate & push a guaranteed 64-70s (>60s floor) TikTok Creator Rewards video for Last Map Standing!
+    - Includes vertical FINAL 2 VS SHOWDOWN real-data comparison bars + Open-Loop Follow CTA.
+    - Publishes PUBLIC automatically via Buffer Free GraphQL API ($0/mo unlimited, max 4/10 rolling slots)
+      using truly randomized human-like spacing (no fixed posting clock!).
+    """
+    sc = sim["scenario"]
+    th = get_theme_for_scenario(sc)
+    ep_voice, ep_fallbacks = pick_episode_voice(cfg, sc)
+    prefix = f"{batch_idx:02d}_" if batch_total > 1 else ""
+    tag = f"[TIKTOK 65s {batch_idx}/{batch_total}]"
+    print(f"{tag} Scenario: {sc['id']} | Theme: {th['name']} | Voice: {ep_voice} | {sc['title_short']}")
+
+    script = generate_tiktok_65s_script(sim)
+    print(f"{tag} Creator Rewards script ready ({len(script.split())} words)")
+
+    voice_mp3 = os.path.join(out_dir, f"{prefix}tiktok_voice.mp3")
+    sfx_wav = os.path.join(out_dir, f"{prefix}tiktok_sfx.wav")
+    mixed_m4a = os.path.join(out_dir, f"{prefix}tiktok_mixed.m4a")
+    out_mp4 = os.path.join(out_dir, f"{prefix}LMS_TIKTOK_65S_{sc['id']}.mp4")
+    cover_jpg = os.path.join(out_dir, f"{prefix}LMS_TIKTOK_COVER_{sc['id']}.jpg")
+    caption_txt = os.path.join(out_dir, f"{prefix}LMS_TIKTOK_CAPTION_{sc['id']}.txt")
+
+    render_short_thumbnail_9x16(sim, cover_jpg)
+    caption = build_tiktok_seo_caption(sim)
+    with open(caption_txt, "w", encoding="utf-8") as cf:
+        cf.write(caption + "\n")
+    # Also append into a single ALL_CAPTIONS.txt for ultra-fast copy-paste across all 3 Drafts!
+    all_caps = os.path.join(out_dir, "ALL_TIKTOK_CAPTIONS.txt")
+    with open(all_caps, "a", encoding="utf-8") as af:
+        af.write(f"================ DRAFT {batch_idx}/{batch_total}: {sc['id']} ================\n")
+        af.write(caption + "\n\n")
+    print(f"{tag} 9:16 Cover + SEO Caption saved ({cover_jpg})")
+
+    # Slightly calmer +2% documentary pace -> precision 64-70s sweet spot for Creator Rewards (>60s rule!)
+    words = synthesize_voice(
+        script,
+        voice_mp3,
+        voice=ep_voice,
+        fallbacks=ep_fallbacks,
+        rate=cfg.get("voice_rate_tiktok", "+2%"),
+        pitch=cfg.get("voice_pitch", "-2Hz"),
+    )
+    vdur = get_audio_duration(voice_mp3)
+    # HARD CREATOR REWARDS FLOOR: guarantee >= 64.0s ALWAYS (just over 60s -> max Completion Rate + 100% paid!)
+    total_dur = max(64.0, vdur + 1.8)
+    print(f"{tag} Voice={vdur:.1f}s -> Final Duration={total_dur:.1f}s (Creator Rewards >=60s GUARANTEED)")
+
+    t_win = max(12.0, total_dur - 5.4)
+    elim_cues = [1.8 + i * ((t_win - 9.0) / 8.0) for i in range(8)]
+    synthesize_saul_bass_soundscape(total_dur, elim_cues, [1.25, t_win - 7.8, t_win - 0.3], t_win, sfx_wav)
+    mix_voice_and_sfx(voice_mp3, sfx_wav, mixed_m4a, total_dur)
+
+    print(f"{tag} Rendering {total_dur:.1f}s V22.8 TikTok Video + FINAL 2 VS Showdown + Follow CTA (1080x1920 @ 30fps)...")
+    render_short_9x16(
+        sim,
+        words,
+        mixed_m4a,
+        total_dur,
+        out_mp4,
+        fps=30,
+        show_vs_showdown=True,
+        cta_label="NEXT MAP TOMORROW  •  FOLLOW",
+    )
+    print(f"{tag} Render complete: {out_mp4} ({os.path.getsize(out_mp4) / 1e6:.2f} MB)")
+
+    # Write convenient Copy-Paste Caption into GitHub Actions Step Summary when running in CI
+    gh_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if gh_summary:
+        try:
+            with open(gh_summary, "a", encoding="utf-8") as sf:
+                sf.write(f"## 🎵 Video {batch_idx}/{batch_total} — `{sc['id']}` (`{th['name']}`)\n")
+                sf.write(f"- **Duration:** `{total_dur:.1f}s` ✅ (Creator Rewards >60s + FINAL 2 VS Showdown)\n")
+                sf.write(f"- **File:** `{os.path.basename(out_mp4)}`\n\n")
+                sf.write("```text\n" + caption + "\n```\n\n")
+        except Exception:
+            pass
+
+    if dry_run:
+        return out_mp4, None
+
+    pub_id = ""
+    if buffer_is_configured():
+        # V22.8 Truly Randomized 24/7 Human-Like Spacing (generated fresh via OS entropy every day!)
+        # Uses max 4 of 10 rolling Buffer Free queue slots -> 120+ PUBLIC TikToks/month for $0 FOREVER!
+        delay_m = max(0, int(delay_minutes))
+        pub_id = publish_tiktok_via_buffer(out_mp4, caption, delay_minutes=delay_m, thumbnail_offset_ms=450)
+        hrs, mins = divmod(delay_m, 60)
+        slot_note = "LIVE NOW!" if delay_m == 0 else f"RANDOM SCHEDULED PUBLIC (+{hrs}h {mins:02d}m)"
+        send_telegram(
+            f"🎵 <b>LAST MAP STANDING — TikTok {batch_idx}/{batch_total} ({total_dur:.0f}s) {slot_note}</b>\n"
+            f"Buffer post_id={pub_id}\n\n{caption}"
+        )
+    elif tiktok_is_configured():
+        pub_id = upload_tiktok_inbox_draft(out_mp4)
+        send_telegram(
+            f"🎵 <b>LAST MAP STANDING (TikTok Draft {batch_idx}/{batch_total} — {total_dur:.0f}s READY!)</b>\n"
+            f"Open TikTok App → Inbox / Drafts & tap Post!\n\n{caption}"
+        )
+    else:
+        print(f"{tag} Add BUFFER_API_KEY secret for 100% AUTOMATIC PUBLIC publishing ($0/mo unlimited via Buffer Free)!")
+
+    mark_published(sc, mode="tiktok", video_id=pub_id or f"artifact_{sc['id']}")
+    return out_mp4, pub_id
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Last Map Standing V22 Autopilot (YouTube + Facebook Graph API)")
-    parser.add_argument("--mode", choices=["short", "longform", "fb_carousel", "fb_text"], default="short")
+    parser = argparse.ArgumentParser(description="Last Map Standing V22 Autopilot (YouTube + Facebook + TikTok)")
+    parser.add_argument("--mode", choices=["short", "longform", "fb_carousel", "fb_text", "tiktok"], default="short")
     parser.add_argument("--scenario-id", default=None)
+    parser.add_argument("--count", type=int, default=1, help="Number of Drafts to generate in one batch (TikTok mode: 1-5, default 3 in CI)")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--demo-fast", action="store_true")
     parser.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"])
@@ -308,14 +487,70 @@ def main():
     args = parser.parse_args()
 
     cfg = load_config()
-    sc = pick_next_scenario(mode=args.mode, force_id=args.scenario_id)
-    sim = simulate_scenario(sc)
-
     if args.out_dir:
         os.makedirs(args.out_dir, exist_ok=True)
         out_dir = args.out_dir
     else:
         out_dir = tempfile.mkdtemp(prefix="lms_v22_")
+
+    if args.mode == "tiktok":
+        n_batch = max(1, min(5, int(args.count or 1)))
+        if n_batch > 1 and args.scenario_id:
+            print("[TIKTOK] --scenario-id supplied -> using it for Video 1 and auto-picking fresh scenarios for the rest.")
+
+        batch_start_ts = time.time()
+        rand_delays = generate_random_tiktok_delays(n_batch)
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        print(f"[TIKTOK] Generated 100% RANDOM daily schedule for {n_batch} videos:")
+        sched_lines = []
+        for idx_d, dm in enumerate(rand_delays):
+            target_t = now_utc + datetime.timedelta(minutes=dm)
+            gap_txt = "START" if idx_d == 0 else f"gap +{divmod(dm - rand_delays[idx_d - 1], 60)[0]}h {divmod(dm - rand_delays[idx_d - 1], 60)[1]:02d}m"
+            line = f"  Video {idx_d + 1}/{n_batch}: +{dm // 60}h {dm % 60:02d}m ({target_t.strftime('%H:%M UTC')}) [{gap_txt}]"
+            print(line)
+            sched_lines.append(line)
+
+        gh_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+        if gh_summary:
+            try:
+                with open(gh_summary, "a", encoding="utf-8") as sf:
+                    sf.write("## 🎲 Today's 100% Random TikTok Publish Schedule\n```text\n")
+                    sf.write("\n".join(sched_lines) + "\n```\n\n")
+            except Exception:
+                pass
+
+        dry_used = set()
+        for bi in range(1, n_batch + 1):
+            force = args.scenario_id if bi == 1 else None
+            sc = pick_next_scenario(mode="tiktok", force_id=force)
+            if args.dry_run and sc["id"] in dry_used:
+                from scenario_engine_v22 import build_infinite_catalog
+                for cand in build_infinite_catalog():
+                    if cand["id"] not in dry_used:
+                        sc = cand
+                        break
+            dry_used.add(sc["id"])
+            sim = simulate_scenario(sc)
+            # Subtract elapsed render minutes so actual publish gaps match the random schedule cleanly
+            target_dm = rand_delays[bi - 1]
+            elapsed_m = int((time.time() - batch_start_ts) // 60)
+            eff_delay = 0 if target_dm == 0 else max(5, target_dm - elapsed_m)
+            run_tiktok_65s(
+                cfg,
+                sim,
+                out_dir,
+                dry_run=args.dry_run,
+                batch_idx=bi,
+                batch_total=n_batch,
+                delay_minutes=eff_delay,
+            )
+            if bi < n_batch and not args.dry_run and (buffer_is_configured() or tiktok_is_configured()):
+                print("[TIKTOK] Cooling down 6s before next TikTok publish...")
+                time.sleep(6)
+        return
+
+    sc = pick_next_scenario(mode=args.mode, force_id=args.scenario_id)
+    sim = simulate_scenario(sc)
 
     if args.mode == "short":
         run_short(cfg, sim, out_dir, dry_run=args.dry_run, privacy=args.privacy)

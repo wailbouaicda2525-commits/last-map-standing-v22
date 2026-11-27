@@ -483,9 +483,75 @@ def render_short_thumbnail_9x16(sim, out_jpg):
 
 
 # =====================================================================
-# 2) 9:16 VERTICAL SHORT RENDERER (V22.3 MULTI-THEME, 30FPS)
+# 2) 9:16 VERTICAL SHORT & TIKTOK RENDERER (V22.8 VS SHOWDOWN + CTA)
 # =====================================================================
-def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
+def _draw_vs_showdown_vertical_9x16(img, draw, W, H, sim, local_u, theme):
+    """V22.8 Vertical 9:16 FINAL 2 VS SHOWDOWN data-bar scene (y=304..1346 viewport).
+    Drives massive pauses, rewatches, comments & TikTok Additional Reward RPM!"""
+    th = theme
+    ru_n = short_name(sim["runner_up"]["name"]).upper()
+    win_n = short_name(sim["winner"]["name"]).upper()
+    cx = W // 2
+
+    # Two high-contrast Contender Cards + central VS medallion
+    draw.rectangle([44, 338, cx - 54, 496], fill=th["ink_black"] + (255,))
+    draw.rectangle([44, 338, 64, 496], fill=th["warning_ochre"] + (255,))
+    draw.text((88, 370), "FINALIST A", font=get_font(FONT_MONO, 24), fill=th["warning_ochre"] + (255,))
+    f_cn_l = get_font(FONT_ANTON, 54 if len(ru_n) <= 10 else 44)
+    draw.text((88, 412), ru_n[:14], font=f_cn_l, fill=th["header_text"] + (255,))
+
+    draw.rectangle([cx + 54, 338, W - 44, 496], fill=th["ink_black"] + (255,))
+    draw.rectangle([W - 64, 338, W - 44, 496], fill=th["alive_blue"] + (255,))
+    draw.text((W - 88, 370), "FINALIST B", font=get_font(FONT_MONO, 24), fill=th["stat_ok"] + (255,), anchor="ra")
+    f_cn_r = get_font(FONT_ANTON, 54 if len(win_n) <= 10 else 44)
+    draw.text((W - 88, 412), win_n[:14], font=f_cn_r, fill=th["header_text"] + (255,), anchor="ra")
+
+    draw.ellipse([cx - 56, 361, cx + 56, 473], fill=th["vermilion"] + (255,), outline=th["ink_black"] + (255,), width=6)
+    draw.text((cx, 417), "VS", font=get_font(FONT_ANTON, 58), fill=th["header_text"] + (255,), anchor="mm")
+
+    # 4 Animated Real-Data Comparison Bars (cleanly inside y=542..1296!)
+    y0 = 548
+    gap = 190
+    max_half = 360
+    f_metric = get_font(FONT_BLACK, 28)
+    f_score = get_font(FONT_ANTON, 46)
+
+    for idx, vm in enumerate(sim["vs_metrics"][:4]):
+        my = y0 + idx * gap
+        bu = ease_out_cubic(max(0.0, min(1.0, (local_u * 2.3) - idx * 0.14)))
+        lw = max(14, int((vm["left_val"] / 100.0) * max_half * bu))
+        rw = max(14, int((vm["right_val"] / 100.0) * max_half * bu))
+
+        # Centered Metric Label Pill
+        draw.rectangle([cx - 190, my, cx + 190, my + 46], fill=th["ink_black"] + (255,))
+        draw.text((cx, my + 23), vm["label"], font=f_metric, fill=th["header_text"] + (255,), anchor="mm")
+
+        # Left Contender Bar (expanding leftward from center)
+        by0, by1 = my + 66, my + 132
+        lx1 = cx - 18
+        lx0 = lx1 - lw
+        draw.rectangle([lx0 - 6, by0 + 6, lx1 - 6, by1 + 6], fill=th["shadow_warm"] + (255,))
+        draw.rectangle([lx0, by0, lx1, by1], fill=th["warning_ochre"] + (255,), outline=th["ink_black"] + (255,), width=3)
+        draw.text((lx0 - 16, (by0 + by1) // 2), f"{int(vm['left_val'] * bu)}", font=f_score, fill=th["body_text"] + (255,), anchor="rm")
+
+        # Right Contender Bar (expanding rightward from center)
+        rx0 = cx + 18
+        rx1 = rx0 + rw
+        draw.rectangle([rx0 + 6, by0 + 6, rx1 + 6, by1 + 6], fill=th["shadow_warm"] + (255,))
+        draw.rectangle([rx0, by0, rx1, by1], fill=th["alive_blue"] + (255,), outline=th["ink_black"] + (255,), width=3)
+        draw.text((rx1 + 16, (by0 + by1) // 2), f"{int(vm['right_val'] * bu)}", font=f_score, fill=th["body_text"] + (255,), anchor="lm")
+
+
+def render_short_9x16(
+    sim,
+    words,
+    audio_m4a,
+    total_dur,
+    out_mp4,
+    fps=30,
+    show_vs_showdown=False,
+    cta_label="NEXT MAP TOMORROW  •  SUBSCRIBE",
+):
     W, H = 1080, 1920
     sc = sim["scenario"]
     th = get_theme_for_scenario(sc)
@@ -498,16 +564,20 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
 
     t_hook_end = 0.92
     t_start_elim = 1.25
-    t_winner = max(t_start_elim + 4.0, total_dur - 4.2)
+    t_winner = max(t_start_elim + 4.0, total_dur - (5.4 if show_vs_showdown else 4.2))
+    t_vs_start = max(t_start_elim + 8.0, t_winner - 7.8) if show_vs_showdown else 99999.0
+    t_vs_end = (t_winner - 0.25) if show_vs_showdown else -1.0
+    t_cta_start = max(t_winner + 0.3, total_dur - 3.8)
     elim_time = {}
+    elim_cutoff_t = (t_vs_start - 0.4) if show_vs_showdown else (t_winner - 1.6)
     for i, e in enumerate(ents):
         if e["name"] == winner["name"]:
             elim_time[e["name"]] = 99999.0
         elif e["name"] == runner_up["name"]:
-            elim_time[e["name"]] = t_winner - 0.8
+            elim_time[e["name"]] = t_winner - 0.15
         else:
             u = i / max(1, total - 2)
-            elim_time[e["name"]] = t_start_elim + (u ** 1.15) * (t_winner - 1.6 - t_start_elim)
+            elim_time[e["name"]] = t_start_elim + (u ** 1.15) * max(1.0, elim_cutoff_t - t_start_elim)
 
     f0 = sim["first_out"][0]["centroid"]
     fmid = ents[total // 2]["centroid"]
@@ -579,10 +649,15 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
         t = fi / fps
         zoom, focus = sample_cam(t)
         is_short_hook = (t < t_hook_end)
+        is_vs_scene = (show_vs_showdown and (t_vs_start <= t < t_vs_end))
 
         status_map = {}
         rem = 0
-        if is_short_hook:
+        if is_vs_scene:
+            rem = 2
+            day_num = max(1, int(max_day * 0.96))
+            frame_np = base_arr.copy()
+        elif is_short_hook:
             # V22.5 Frame-0 Scroll-Stopper Flash-Forward: collapse map immediately without spoiling winner!
             hook_u = smoothstep(t / max(0.05, t_hook_end - 0.04))
             prog = 0.25 + 0.72 * hook_u
@@ -595,6 +670,14 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
                 else:
                     rem += 1
                     status_map[nm] = "warning" if rem <= 6 else "alive"
+            frame_np = base_arr.copy()
+            draw_paper_cut_map_cv(frame_np, geom, map_box, status_map, zoom=zoom, focus=focus, shadow_offset=(8, 10), border_w=2, theme=th)
+            draw_mechanic_overlay_cv(frame_np, sc, map_box, progress=prog, zoom=zoom, focus=focus, theme=th)
+            # Expanding shockwave pulse on First Casualty from Frame 0!
+            cx0, cy0 = transform_pt(*f0, map_box, zoom=zoom, focus=focus)
+            for ring_i in range(2):
+                rr = int(((t * 2.2 + ring_i * 0.45) % 1.0) * 160 + 18)
+                cv2.circle(frame_np, (int(cx0), int(cy0)), rr, th["vermilion"], 5, cv2.LINE_AA)
         else:
             prog = max(0.0, min(1.0, (t - t_start_elim) / max(0.1, t_winner - t_start_elim)))
             day_num = int(prog * max_day) if t >= t_start_elim else 0
@@ -611,18 +694,9 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
                         status_map[nm] = "alive"
                 else:
                     status_map[nm] = "just_fell" if (t - et) < 0.9 else "eliminated"
-
-        frame_np = base_arr.copy()
-        draw_paper_cut_map_cv(frame_np, geom, map_box, status_map, zoom=zoom, focus=focus, shadow_offset=(8, 10), border_w=2, theme=th)
-        draw_mechanic_overlay_cv(frame_np, sc, map_box, progress=prog, zoom=zoom, focus=focus, theme=th)
-
-        if is_short_hook:
-            # Expanding shockwave pulse on First Casualty from Frame 0!
-            cx0, cy0 = transform_pt(*f0, map_box, zoom=zoom, focus=focus)
-            for ring_i in range(2):
-                rr = int(((t * 2.2 + ring_i * 0.45) % 1.0) * 160 + 18)
-                cv2.circle(frame_np, (int(cx0), int(cy0)), rr, th["vermilion"], 5, cv2.LINE_AA)
-        else:
+            frame_np = base_arr.copy()
+            draw_paper_cut_map_cv(frame_np, geom, map_box, status_map, zoom=zoom, focus=focus, shadow_offset=(8, 10), border_w=2, theme=th)
+            draw_mechanic_overlay_cv(frame_np, sc, map_box, progress=prog, zoom=zoom, focus=focus, theme=th)
             for e in ents:
                 et = elim_time[e["name"]]
                 age = t - et
@@ -642,38 +716,56 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
         # Bold Top Editorial Header
         draw.rectangle([0, 0, W, 286], fill=th["ink_black"] + (255,))
         draw.rectangle([0, 286, W, 304], fill=th["vermilion"] + (255,))
-        rule_hdr = "FLASH-FORWARD PREVIEW // WHO SURVIVES?" if is_short_hook else sc.get("rule_label", "MAP SIMULATION // LIVE")
-        draw.text((52, 46), rule_hdr, font=f_rule, fill=th["warning_ochre"] + (255,))
-        day_lbl = f"ROUND {day_num:02d}" if sc["mechanic"] in ("laser_line", "shrinking_zone") else f"DAY {day_num:03d}"
-        draw.text((52, 98), day_lbl, font=f_day, fill=th["header_text"] + (255,))
-        rem_col = th["vermilion"] if rem <= 10 else th["header_text"]
-        if rem == 1:
-            rem_col = th["warning_ochre"]
-        draw.text((W - 52, 114), f"{rem} LEFT", font=f_left, fill=rem_col + (255,), anchor="ra")
-
-        if is_short_hook:
-            # Frame-0 bold kinetic hook stamp centered cleanly in lower map viewport
-            hx = (W - hook_stamp.width) // 2
-            hy = 1130
-            img.alpha_composite(hook_stamp, (hx, hy))
+        if is_vs_scene:
+            draw.text((52, 46), "FINAL 2 SHOWDOWN  //  REAL DATA VERDICT", font=f_rule, fill=th["warning_ochre"] + (255,))
+            draw.text((52, 98), "FINAL 2", font=f_day, fill=th["header_text"] + (255,))
+            draw.text((W - 52, 114), "DATA VS", font=f_left, fill=th["warning_ochre"] + (255,), anchor="ra")
+            vs_u = max(0.0, min(1.0, (t - t_vs_start) / max(0.2, t_vs_end - t_vs_start)))
+            _draw_vs_showdown_vertical_9x16(img, draw, W, H, sim, vs_u, th)
         else:
-            # Spotlight callout badges
-            for sp_name, t0, t1, sp_tag, is_win in spotlights:
-                if t0 <= t <= t1 and sp_name in geom:
-                    px, py = transform_pt(*geom[sp_name]["centroid"], map_box, zoom=zoom, focus=focus)
-                    if 60 < px < W - 60 and 330 < py < 1300:
-                        badge_col = th["alive_blue"] if is_win else th["vermilion"]
-                        txt_lbl = f"{short_name(sp_name).upper()} — {sp_tag}"
-                        tw = int(draw.textlength(txt_lbl, font=f_pin)) + 52
-                        bx0 = max(36, min(W - tw - 36, int(px - tw // 2)))
-                        by0 = max(336, min(1220, int(py - 92)))
-                        draw.line([(px, py), (bx0 + tw // 2, by0 + 68)], fill=th["body_text"] + (220,), width=5)
-                        draw.ellipse([px - 10, py - 10, px + 10, py + 10], fill=badge_col + (255,), outline=th["ink_black"] + (255,), width=3)
-                        draw.rectangle([bx0, by0, bx0 + tw, by0 + 68], fill=badge_col + (250,), outline=th["ink_black"] + (255,), width=4)
-                        draw.text((bx0 + tw // 2, by0 + 34), txt_lbl, font=f_pin, fill=th["header_text"] + (255,), anchor="mm")
+            rule_hdr = "FLASH-FORWARD PREVIEW // WHO SURVIVES?" if is_short_hook else sc.get("rule_label", "MAP SIMULATION // LIVE")
+            draw.text((52, 46), rule_hdr, font=f_rule, fill=th["warning_ochre"] + (255,))
+            day_lbl = f"ROUND {day_num:02d}" if sc["mechanic"] in ("laser_line", "shrinking_zone") else f"DAY {day_num:03d}"
+            draw.text((52, 98), day_lbl, font=f_day, fill=th["header_text"] + (255,))
+            rem_col = th["vermilion"] if rem <= 10 else th["header_text"]
+            if rem == 1:
+                rem_col = th["warning_ochre"]
+            draw.text((W - 52, 114), f"{rem} LEFT", font=f_left, fill=rem_col + (255,), anchor="ra")
 
-        if t >= t_winner:
-            img.alpha_composite(win_stamp, (W - win_stamp.width - 44, 340))
+            if is_short_hook:
+                # Frame-0 bold kinetic hook stamp centered cleanly in lower map viewport
+                hx = (W - hook_stamp.width) // 2
+                hy = 1130
+                img.alpha_composite(hook_stamp, (hx, hy))
+            else:
+                # Spotlight callout badges
+                for sp_name, t0, t1, sp_tag, is_win in spotlights:
+                    if t0 <= t <= t1 and sp_name in geom:
+                        px, py = transform_pt(*geom[sp_name]["centroid"], map_box, zoom=zoom, focus=focus)
+                        if 60 < px < W - 60 and 330 < py < 1230:
+                            badge_col = th["alive_blue"] if is_win else th["vermilion"]
+                            txt_lbl = f"{short_name(sp_name).upper()} — {sp_tag}"
+                            tw = int(draw.textlength(txt_lbl, font=f_pin)) + 52
+                            bx0 = max(36, min(W - tw - 36, int(px - tw // 2)))
+                            by0 = max(336, min(1160, int(py - 92)))
+                            draw.line([(px, py), (bx0 + tw // 2, by0 + 68)], fill=th["body_text"] + (220,), width=5)
+                            draw.ellipse([px - 10, py - 10, px + 10, py + 10], fill=badge_col + (255,), outline=th["ink_black"] + (255,), width=3)
+                            draw.rectangle([bx0, by0, bx0 + tw, by0 + 68], fill=badge_col + (250,), outline=th["ink_black"] + (255,), width=4)
+                            draw.text((bx0 + tw // 2, by0 + 34), txt_lbl, font=f_pin, fill=th["header_text"] + (255,), anchor="mm")
+
+            if t >= t_winner:
+                img.alpha_composite(win_stamp, (W - win_stamp.width - 44, 340))
+
+            # V22.8 Smart Open-Loop Subscribe / Follow CTA Pill (final 3.8s, cleanly above divider!)
+            if cta_label and t >= t_cta_start:
+                pill_x0, pill_x1 = 110, W - 110
+                pill_y0, pill_y1 = 1244, 1322
+                draw.rounded_rectangle([pill_x0, pill_y0, pill_x1, pill_y1], radius=14,
+                                       fill=th["ink_black"] + (245,), outline=th["vermilion"] + (255,), width=5)
+                draw.rounded_rectangle([pill_x0 + 14, pill_y0 + 14, pill_x0 + 32, pill_y1 - 14], radius=6,
+                                       fill=th["vermilion"] + (255,))
+                draw.text((W // 2 + 12, (pill_y0 + pill_y1) // 2), cta_label,
+                          font=get_font(FONT_ANTON, 40), fill=th["header_text"] + (255,), anchor="mm")
 
         # Bottom Editorial Caption Card
         card_y0, card_y1 = 1380, 1690

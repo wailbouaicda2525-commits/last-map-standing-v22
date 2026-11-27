@@ -121,7 +121,7 @@ def _offline_short_script(sim):
         f"By the halfway mark, more than half the map has gone dark, dragging down major economies like {mid_name}. "
         f"Only the most resilient territories remain standing as the countdown narrows to the final two: {ru} versus {win}. "
         f"In the final stretch, {ru} hits severe resource bottlenecks while {win} holds an energy score of {win_m['energy']} and a food index of {win_m['food']}. "
-        f"At Day {max_d}, only one remains on the map: {win}. Would your home survive?"
+        f"At Day {max_d}, only one remains on the map: {win}. Comment whether your home survived — and subscribe so you do not miss tomorrow's map."
     )
 
 
@@ -282,13 +282,93 @@ def generate_short_script(sim):
         f"Last Survivor (Winner): {win}\n"
         f"CRITICAL 1-SECOND VIRAL HOOK RULE: Your VERY FIRST SENTENCE (first 8-12 words) MUST stop people mid-scroll by naming {f1} collapsing first OR the shocking survival stakes immediately. NEVER open with slow filler like 'Right now', 'Imagine if', 'Welcome', or 'In this video'.\n"
         f"Narrative Style ({style_name}): {opening_dir}\n"
-        f"Closing Question: {closing_dir}\n"
+        f"Closing Question: {closing_dir} Always end with a tight 1-line open-loop subscribe hook like 'Comment whether your home survived and subscribe for tomorrow's map.'\n"
         f"Rules: 100% factual adult tone (RealLifeLore / Wendover style), zero wars/violence/politics, punchy fast rhythm, "
         f"cover early drop-offs, halfway collapse, final two ({ru} vs {win}), and reveal {win} as the lone survivor. "
         f"Plain spoken words ONLY."
     )
     txt = _llm_generate(prompt, min_words=85, max_tokens=450)
     return txt if txt else _offline_short_script(sim)
+
+
+def _offline_tiktok_65s_script(sim):
+    """
+    158-170 word precision-tuned TikTok Creator Rewards script (64-70 seconds at +2% TTS rate).
+    Just over the mandatory 60-second Creator Rewards rule -> maximizes BOTH 100% monetization
+    AND Completion Rate, timed cleanly with the vertical FINAL 2 VS SHOWDOWN data bars!
+    """
+    sc = sim["scenario"]
+    total = sim["total"]
+    ents = sim["entities"]
+    clean = lambda n: n.replace("United States of America", "the United States")
+    f1 = clean(sim["first_out"][0]["name"])
+    f2 = clean(sim["first_out"][1]["name"])
+    f3 = clean(sim["first_out"][2]["name"])
+    mid_name = clean(ents[total // 2]["name"])
+    top5 = [clean(e["name"]) for e in sim["top5"]]
+    ru = clean(sim["runner_up"]["name"])
+    ru_m = sim["runner_up"]["metrics"]
+    win = clean(sim["winner"]["name"])
+    win_m = sim["winner"]["metrics"]
+    unit = "states" if sc["arena"] == "us_states" else "countries"
+    unit_s = "state" if sc["arena"] == "us_states" else "country"
+    max_d = sc["max_day"]
+
+    h = sum(ord(c) * (i + 3) for i, c in enumerate(sc.get("id", "lms"))) % 4
+    if h == 0:
+        hook = f"{f1} collapses first — and out of {total} {unit}, only ONE makes it to Day {max_d}."
+    elif h == 1:
+        hook = f"{total - 1} {unit} are about to go dark — starting immediately with {f1} and {f2}."
+    elif h == 2:
+        hook = f"Everyone bets on the richest giants, yet {f1} falls first before the opening wave even ends."
+    else:
+        hook = f"Watch {total} {unit} vanish when one core system breaks — starting immediately with {f1}."
+
+    return (
+        f"{hook} {sc['premise']} "
+        f"Right behind {f1}, dense hubs like {f2} and {f3} hit critical reserve shortages and drop off the board almost immediately. "
+        f"By the halfway mark, half the map has gone dark, dragging down major economies like {mid_name} whose demand outpaces domestic reserves. "
+        f"Past three quarters collapse, only five fortresses remain standing: {top5[4]}, {top5[3]}, {top5[2]}, {top5[1]}, and {top5[0]}. "
+        f"One by one, seasonal bottlenecks eliminate three more until just two finalists go head to head: {ru} versus {win}. "
+        f"Look at the showdown numbers: {ru} scores {ru_m['energy']} in energy and {ru_m['food']} in food, while {win} commands {win_m['energy']} in energy and {win_m['food']} in food surplus. "
+        f"Right before Day {max_d}, {ru} cracks — leaving {win} as Last Map Standing. "
+        f"Did your home survive? Comment below and follow for tomorrow's survival map."
+    )
+
+
+def generate_tiktok_65s_script(sim):
+    """Generate a precision 64-70s (158-172 word) TikTok Creator Rewards script for Last Map Standing."""
+    sc = sim["scenario"]
+    clean = lambda n: n.replace("United States of America", "USA")
+    f1 = clean(sim["first_out"][0]["name"])
+    f3 = ", ".join(clean(e["name"]) for e in sim["first_out"][:3])
+    mid_name = clean(sim["entities"][sim["total"] // 2]["name"])
+    top5 = ", ".join(clean(e["name"]) for e in sim["top5"][:5])
+    ru = clean(sim["runner_up"]["name"])
+    win = clean(sim["winner"]["name"])
+    win_m = sim["winner"]["metrics"]
+    ru_m = sim["runner_up"]["metrics"]
+    style_name, opening_dir, closing_dir = _pick_narrative_style(sc)
+
+    prompt = (
+        f"Write a viral, high-retention 158-to-172-word TikTok Creator Rewards voiceover script (MUST read at 64 to 70 seconds — NEVER under 62 seconds, NEVER over 75 seconds!) for 'Last Map Standing'.\n"
+        f"Title: {sc['title_short']}\n"
+        f"Premise: {sc['premise']}\n"
+        f"Total territories: {sim['total']} | Timeline: Day 0 to Day {sc['max_day']}\n"
+        f"First eliminated: {f1} (First 3 out: {f3})\n"
+        f"Midpoint shock casualty: {mid_name}\n"
+        f"Final 5 fortresses: {top5}\n"
+        f"Final 2 VS Showdown (visual data bars appear on screen here!): {ru} (Energy {ru_m['energy']}, Food {ru_m['food']}) vs {win} (Energy {win_m['energy']}, Food {win_m['food']}, Water {win_m['water']})\n"
+        f"Winner (Last Map Standing): {win}\n"
+        f"CRITICAL 1-SECOND HOOK RULE: Your VERY FIRST SENTENCE (first 8-12 words) MUST shock viewers mid-scroll by naming {f1} collapsing first or stating '{sim['total'] - 1} fall, only 1 survives'. ZERO slow intros.\n"
+        f"Narrative Style ({style_name}): {opening_dir}\n"
+        f"Closing CTA: {closing_dir} Always end with a punchy open-loop follow hook like 'Comment your home and follow for tomorrow's survival map.'\n"
+        f"Rules: 100% factual adult RealLifeLore tone, zero wars/violence/politics, STRICTLY 158-172 words, plain spoken English ONLY."
+    )
+    txt = _llm_generate(prompt, min_words=152, max_tokens=560)
+    if txt and 152 <= len(txt.split()) <= 185:
+        return txt
+    return _offline_tiktok_65s_script(sim)
 
 
 def compute_adaptive_minutes(sim):
