@@ -113,6 +113,27 @@ def synthesize_saul_bass_soundscape(duration_s, elim_cues, act_cues, winner_t, w
             lt = np.linspace(0, dur, L, dtype=np.float32)
             bed[i0:i0 + L] += 0.11 * np.sin(2 * np.pi * freq * lt) * np.exp(-lt * 2.4)
 
+    def add_hook_slam(t0=0.02, amp=0.42):
+        """Frame-0 cinema sub-bass slam + crisp transient hit to stop mobile scrolling instantly."""
+        i0 = int(t0 * sr)
+        dur = 0.48
+        L = min(int(dur * sr), n - i0)
+        if i0 < 0 or L <= 0:
+            return
+        lt = np.linspace(0, dur, L, dtype=np.float32)
+        freq = 155.0 * (34.0 / 155.0) ** (lt / dur)
+        phase = 2 * np.pi * np.cumsum(freq) / sr
+        sub = np.sin(phase) * np.exp(-lt * 6.5)
+        punch = np.sin(2 * np.pi * 620 * lt) * np.exp(-lt * 55.0) * 0.35
+        bed[i0:i0 + L] += amp * (sub + punch)
+
+    # Frame-0 Scroll-Stopper Impact Slam + Hook Rewind Snap!
+    add_hook_slam(0.02, amp=0.40)
+    if duration_s < 120.0:
+        add_paper_whoosh(0.88, amp=0.20)  # Short hook -> DAY 000 snap
+    else:
+        add_paper_whoosh(4.35, amp=0.22)  # Long-form cold-open -> REWIND TO DAY 000 snap
+
     for ct_elim in elim_cues:
         add_stamp_thud(ct_elim, amp=0.28)
     for ct_act in act_cues:
@@ -120,10 +141,13 @@ def synthesize_saul_bass_soundscape(duration_s, elim_cues, act_cues, winner_t, w
     if winner_t is not None:
         add_winner_chord(winner_t)
 
-    fade = min(int(sr * 0.4), n // 4)
-    if fade > 0:
-        bed[:fade] *= np.linspace(0, 1, fade, dtype=np.float32)
-        bed[-fade:] *= np.linspace(1, 0, fade, dtype=np.float32)
+    # Tiny 12ms anti-click ramp at start (preserves full Frame-0 bass slam!) + smooth 0.4s tail fade
+    head_fade = min(int(sr * 0.012), n // 8)
+    tail_fade = min(int(sr * 0.4), n // 4)
+    if head_fade > 0:
+        bed[:head_fade] *= np.linspace(0, 1, head_fade, dtype=np.float32)
+    if tail_fade > 0:
+        bed[-tail_fade:] *= np.linspace(1, 0, tail_fade, dtype=np.float32)
 
     bed = np.nan_to_num(bed, nan=0.0, posinf=0.95, neginf=-0.95)
     bed = np.clip(bed, -0.95, 0.95)

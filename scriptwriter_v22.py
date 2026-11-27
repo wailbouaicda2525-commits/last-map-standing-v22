@@ -104,13 +104,24 @@ def _offline_short_script(sim):
     unit = "states" if sc["arena"] == "us_states" else "countries"
     max_d = sc["max_day"]
 
+    # Rotate 4 high-retention first-second pattern-interrupt hooks!
+    h = sum(ord(c) for c in sc.get("id", "lms")) % 4
+    if h == 0:
+        hook = f"{f1} collapses first — and out of {total} {unit}, only ONE survives to Day {max_d}."
+    elif h == 1:
+        hook = f"Within hours, {f1} and {f2} go completely dark — watch {total} {unit} shrink down to ONE."
+    elif h == 2:
+        hook = f"Everyone bets on the richest giants, yet {f1} is eliminated first before the opening wave even ends."
+    else:
+        hook = f"{total - 1} {unit} are about to disappear from this map — starting immediately with {f1}."
+
     return (
-        f"{sc['premise']} Out of {total} {unit}, only one can survive to Day {max_d}. "
-        f"Almost immediately, the most vulnerable territories collapse first: {f1}, {f2}, and {f3} are eliminated before the first wave even ends. "
-        f"By the halfway mark, more than half the map has gone completely dark, dragging down major economies like {mid_name}. "
-        f"Only the most resilient regions remain standing as the countdown tightens toward the final two: {ru} versus {win}. "
-        f"In the final stretch, {ru} runs into severe resource bottlenecks while {win} holds an energy score of {win_m['energy']} and a food index of {win_m['food']}. "
-        f"At Day {max_d}, only one remains on the map: {win}. Would your home survive this simulation?"
+        f"{hook} {sc['premise']} "
+        f"Right behind {f1}, vulnerable regions like {f2} and {f3} cross their breaking point and vanish. "
+        f"By the halfway mark, more than half the map has gone dark, dragging down major economies like {mid_name}. "
+        f"Only the most resilient territories remain standing as the countdown narrows to the final two: {ru} versus {win}. "
+        f"In the final stretch, {ru} hits severe resource bottlenecks while {win} holds an energy score of {win_m['energy']} and a food index of {win_m['food']}. "
+        f"At Day {max_d}, only one remains on the map: {win}. Would your home survive?"
     )
 
 
@@ -136,14 +147,15 @@ def _offline_longform_acts(sim):
     acts = [
         {
             "act_id": 0,
-            "label": "ACT I — THE SIMULATION BEGINS",
+            "label": "ACT I — COLD OPEN & SIMULATION START",
             "scene_type": "map",
             "text": (
-                f"Right now, all {total} {unit} sit connected inside an invisible web of energy grids, supply chains, food corridors, and financial flows. "
-                f"Now imagine pulling the plug on that balance all at once. {sc['premise']} "
-                f"Starting at Day Zero and running all the way to Day {max_d}, we modeled every single {unit_s} using real public data on domestic energy, food output, freshwater reserves, population pressure, and geography. "
-                f"Every time a territory crosses its breaking point, it turns dark and disappears from the board. Watch the leaderboard on the right carefully, because some of the wealthiest places on the map are about to fall faster than anyone expects. "
-                f"Only one {unit_s} can remain standing at the end. Let us start the clock."
+                f"By Day {max_d}, {total - 1} {unit} are completely erased from the map — starting almost instantly with {w1[0]} — leaving only two unexpected finalists standing face to face. "
+                f"Before we reveal which single {unit_s} outlasts everyone else, let us rewind the clock back to Day Zero. "
+                f"{sc['premise']} "
+                f"We modeled every single {unit_s} using real public data on domestic energy, food output, freshwater reserves, population pressure, and geography. "
+                f"Every time a territory crosses its breaking point, it goes offline and drops off the leaderboard. Watch the rankings closely, because some of the wealthiest places on the map are about to fall faster than anyone expects. "
+                f"Only one {unit_s} remains standing by Day {max_d}. Let us start the simulation."
             ),
         },
         {
@@ -252,6 +264,7 @@ def _pick_narrative_style(scenario):
 
 def generate_short_script(sim):
     sc = sim["scenario"]
+    f1 = sim["first_out"][0]["name"].replace("United States of America", "USA")
     f3 = ", ".join(e["name"].replace("United States of America", "USA") for e in sim["first_out"][:3])
     top3 = ", ".join(e["name"].replace("United States of America", "USA") for e in sim["top5"][:3])
     win = sim["winner"]["name"].replace("United States of America", "USA")
@@ -259,17 +272,18 @@ def generate_short_script(sim):
     style_name, opening_dir, closing_dir = _pick_narrative_style(sc)
 
     prompt = (
-        f"Write a gripping 115-to-135-word YouTube Short voiceover script for a data map simulation channel named 'Last Map Standing'.\n"
+        f"Write a viral, ultra-high-retention 115-to-135-word YouTube Short / Facebook Reel voiceover script for 'Last Map Standing'.\n"
         f"Title: {sc['title_short']}\n"
         f"Premise: {sc['premise']}\n"
         f"Total regions: {sim['total']} | Timeline: Day 0 to Day {sc['max_day']}\n"
-        f"First 3 eliminated: {f3}\n"
+        f"First eliminated: {f1} (First 3 out: {f3})\n"
         f"Final 3 standing: {top3}\n"
         f"Runner-up (falls right at the end): {ru}\n"
         f"Last Survivor (Winner): {win}\n"
+        f"CRITICAL 1-SECOND VIRAL HOOK RULE: Your VERY FIRST SENTENCE (first 8-12 words) MUST stop people mid-scroll by naming {f1} collapsing first OR the shocking survival stakes immediately. NEVER open with slow filler like 'Right now', 'Imagine if', 'Welcome', or 'In this video'.\n"
         f"Narrative Style ({style_name}): {opening_dir}\n"
         f"Closing Question: {closing_dir}\n"
-        f"Rules: 100% factual adult tone (Wendover / RealLifeLore style), zero wars/violence/politics, punchy short sentences, "
+        f"Rules: 100% factual adult tone (RealLifeLore / Wendover style), zero wars/violence/politics, punchy fast rhythm, "
         f"cover early drop-offs, halfway collapse, final two ({ru} vs {win}), and reveal {win} as the lone survivor. "
         f"Plain spoken words ONLY."
     )
@@ -319,7 +333,12 @@ def generate_longform_acts(sim, target_minutes=None):
     for base_act in offline:
         extra_dir = ""
         if base_act["act_id"] == 0:
-            extra_dir = f"Opening Direction ({style_name}): {opening_dir}\n"
+            extra_dir = (
+                f"CRITICAL COLD-OPEN HOOK (First 5 seconds): Open immediately with a high-stakes flash-forward teaser ("
+                f"mentioning that {sim['total'] - 1} territories collapse — starting immediately with {sim['first_out'][0]['name']} — "
+                f"until two surprise finalists remain, WITHOUT spoiling the winner's name), then rewind back to Day Zero! "
+                f"Opening Style ({style_name}): {opening_dir}\n"
+            )
         elif base_act["act_id"] == len(offline) - 1:
             extra_dir = f"Closing Direction: {closing_dir}\n"
 

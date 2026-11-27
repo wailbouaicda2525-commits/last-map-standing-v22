@@ -496,7 +496,8 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
     winner = sim["winner"]
     runner_up = sim["runner_up"]
 
-    t_start_elim = 1.8
+    t_hook_end = 0.92
+    t_start_elim = 1.25
     t_winner = max(t_start_elim + 4.0, total_dur - 4.2)
     elim_time = {}
     for i, e in enumerate(ents):
@@ -513,7 +514,9 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
     fru = runner_up["centroid"]
     fwin = winner["centroid"]
     cam_keys = [
-        (0.0, 1.02, 0.50, 0.48),
+        (0.0, 1.08, 0.50, 0.48),
+        (t_hook_end, 1.18, max(0.26, min(0.74, f0[0])), max(0.26, min(0.74, f0[1]))),
+        (t_start_elim, 1.03, 0.50, 0.48),
         (t_start_elim + 2.5, 1.38, max(0.22, min(0.78, f0[0])), max(0.22, min(0.78, f0[1]))),
         (lerp(t_start_elim, t_winner, 0.48), 1.18, max(0.22, min(0.78, fmid[0])), max(0.22, min(0.78, fmid[1]))),
         (t_winner - 2.5, 1.36, max(0.22, min(0.78, fru[0])), max(0.22, min(0.78, fru[1]))),
@@ -554,6 +557,7 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
     f_foot = get_font(FONT_MONO, 28)
 
     win_stamp = make_stamp_image("LAST STANDING", w=460, h=110, color=th["alive_blue"], angle=-7, theme=th)
+    hook_stamp = make_stamp_image(f"{total - 1} FALL  •  1 SURVIVES", w=760, h=136, color=th["vermilion"], angle=-4, theme=th)
 
     ff_cmd = [
         FFMPEG, "-y",
@@ -574,36 +578,58 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
     for fi in range(total_frames):
         t = fi / fps
         zoom, focus = sample_cam(t)
-        prog = max(0.0, min(1.0, (t - t_start_elim) / max(0.1, t_winner - t_start_elim)))
-        day_num = int(prog * max_day) if t >= t_start_elim else 0
+        is_short_hook = (t < t_hook_end)
 
         status_map = {}
         rem = 0
-        for e in ents:
-            nm = e["name"]
-            et = elim_time[nm]
-            if t < et:
-                rem += 1
-                if nm == winner["name"] and t >= t_winner - 0.1:
-                    status_map[nm] = "winner"
-                elif et - t < 1.2:
-                    status_map[nm] = "warning"
+        if is_short_hook:
+            # V22.5 Frame-0 Scroll-Stopper Flash-Forward: collapse map immediately without spoiling winner!
+            hook_u = smoothstep(t / max(0.05, t_hook_end - 0.04))
+            prog = 0.25 + 0.72 * hook_u
+            day_num = int(prog * max_day)
+            cutoff = int(prog * max(1, total - 2))
+            for idx_e, e in enumerate(ents):
+                nm = e["name"]
+                if idx_e < cutoff:
+                    status_map[nm] = "just_fell" if (cutoff - idx_e) <= max(3, total // 14) else "eliminated"
                 else:
-                    status_map[nm] = "alive"
-            else:
-                status_map[nm] = "just_fell" if (t - et) < 0.9 else "eliminated"
+                    rem += 1
+                    status_map[nm] = "warning" if rem <= 6 else "alive"
+        else:
+            prog = max(0.0, min(1.0, (t - t_start_elim) / max(0.1, t_winner - t_start_elim)))
+            day_num = int(prog * max_day) if t >= t_start_elim else 0
+            for e in ents:
+                nm = e["name"]
+                et = elim_time[nm]
+                if t < et:
+                    rem += 1
+                    if nm == winner["name"] and t >= t_winner - 0.1:
+                        status_map[nm] = "winner"
+                    elif et - t < 1.2:
+                        status_map[nm] = "warning"
+                    else:
+                        status_map[nm] = "alive"
+                else:
+                    status_map[nm] = "just_fell" if (t - et) < 0.9 else "eliminated"
 
         frame_np = base_arr.copy()
         draw_paper_cut_map_cv(frame_np, geom, map_box, status_map, zoom=zoom, focus=focus, shadow_offset=(8, 10), border_w=2, theme=th)
         draw_mechanic_overlay_cv(frame_np, sc, map_box, progress=prog, zoom=zoom, focus=focus, theme=th)
 
-        for e in ents:
-            et = elim_time[e["name"]]
-            age = t - et
-            if 0.0 <= age < 0.7:
-                cx, cy = transform_pt(*e["centroid"], map_box, zoom=zoom, focus=focus)
-                rr = int(16 + age * 120)
-                cv2.circle(frame_np, (int(cx), int(cy)), rr, th["vermilion"], 4, cv2.LINE_AA)
+        if is_short_hook:
+            # Expanding shockwave pulse on First Casualty from Frame 0!
+            cx0, cy0 = transform_pt(*f0, map_box, zoom=zoom, focus=focus)
+            for ring_i in range(2):
+                rr = int(((t * 2.2 + ring_i * 0.45) % 1.0) * 160 + 18)
+                cv2.circle(frame_np, (int(cx0), int(cy0)), rr, th["vermilion"], 5, cv2.LINE_AA)
+        else:
+            for e in ents:
+                et = elim_time[e["name"]]
+                age = t - et
+                if 0.0 <= age < 0.7:
+                    cx, cy = transform_pt(*e["centroid"], map_box, zoom=zoom, focus=focus)
+                    rr = int(16 + age * 120)
+                    cv2.circle(frame_np, (int(cx), int(cy)), rr, th["vermilion"], 4, cv2.LINE_AA)
 
         # Clean editorial viewport clip: never bleed under caption card/footer
         frame_np[:304, :] = base_arr[:304, :]
@@ -616,7 +642,8 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
         # Bold Top Editorial Header
         draw.rectangle([0, 0, W, 286], fill=th["ink_black"] + (255,))
         draw.rectangle([0, 286, W, 304], fill=th["vermilion"] + (255,))
-        draw.text((52, 46), sc.get("rule_label", "MAP SIMULATION // LIVE"), font=f_rule, fill=th["warning_ochre"] + (255,))
+        rule_hdr = "FLASH-FORWARD PREVIEW // WHO SURVIVES?" if is_short_hook else sc.get("rule_label", "MAP SIMULATION // LIVE")
+        draw.text((52, 46), rule_hdr, font=f_rule, fill=th["warning_ochre"] + (255,))
         day_lbl = f"ROUND {day_num:02d}" if sc["mechanic"] in ("laser_line", "shrinking_zone") else f"DAY {day_num:03d}"
         draw.text((52, 98), day_lbl, font=f_day, fill=th["header_text"] + (255,))
         rem_col = th["vermilion"] if rem <= 10 else th["header_text"]
@@ -624,20 +651,26 @@ def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
             rem_col = th["warning_ochre"]
         draw.text((W - 52, 114), f"{rem} LEFT", font=f_left, fill=rem_col + (255,), anchor="ra")
 
-        # Spotlight callout badges
-        for sp_name, t0, t1, sp_tag, is_win in spotlights:
-            if t0 <= t <= t1 and sp_name in geom:
-                px, py = transform_pt(*geom[sp_name]["centroid"], map_box, zoom=zoom, focus=focus)
-                if 60 < px < W - 60 and 330 < py < 1300:
-                    badge_col = th["alive_blue"] if is_win else th["vermilion"]
-                    txt_lbl = f"{short_name(sp_name).upper()} — {sp_tag}"
-                    tw = int(draw.textlength(txt_lbl, font=f_pin)) + 52
-                    bx0 = max(36, min(W - tw - 36, int(px - tw // 2)))
-                    by0 = max(336, min(1220, int(py - 92)))
-                    draw.line([(px, py), (bx0 + tw // 2, by0 + 68)], fill=th["body_text"] + (220,), width=5)
-                    draw.ellipse([px - 10, py - 10, px + 10, py + 10], fill=badge_col + (255,), outline=th["ink_black"] + (255,), width=3)
-                    draw.rectangle([bx0, by0, bx0 + tw, by0 + 68], fill=badge_col + (250,), outline=th["ink_black"] + (255,), width=4)
-                    draw.text((bx0 + tw // 2, by0 + 34), txt_lbl, font=f_pin, fill=th["header_text"] + (255,), anchor="mm")
+        if is_short_hook:
+            # Frame-0 bold kinetic hook stamp centered cleanly in lower map viewport
+            hx = (W - hook_stamp.width) // 2
+            hy = 1130
+            img.alpha_composite(hook_stamp, (hx, hy))
+        else:
+            # Spotlight callout badges
+            for sp_name, t0, t1, sp_tag, is_win in spotlights:
+                if t0 <= t <= t1 and sp_name in geom:
+                    px, py = transform_pt(*geom[sp_name]["centroid"], map_box, zoom=zoom, focus=focus)
+                    if 60 < px < W - 60 and 330 < py < 1300:
+                        badge_col = th["alive_blue"] if is_win else th["vermilion"]
+                        txt_lbl = f"{short_name(sp_name).upper()} — {sp_tag}"
+                        tw = int(draw.textlength(txt_lbl, font=f_pin)) + 52
+                        bx0 = max(36, min(W - tw - 36, int(px - tw // 2)))
+                        by0 = max(336, min(1220, int(py - 92)))
+                        draw.line([(px, py), (bx0 + tw // 2, by0 + 68)], fill=th["body_text"] + (220,), width=5)
+                        draw.ellipse([px - 10, py - 10, px + 10, py + 10], fill=badge_col + (255,), outline=th["ink_black"] + (255,), width=3)
+                        draw.rectangle([bx0, by0, bx0 + tw, by0 + 68], fill=badge_col + (250,), outline=th["ink_black"] + (255,), width=4)
+                        draw.text((bx0 + tw // 2, by0 + 34), txt_lbl, font=f_pin, fill=th["header_text"] + (255,), anchor="mm")
 
         if t >= t_winner:
             img.alpha_composite(win_stamp, (W - win_stamp.width - 44, 340))
@@ -821,7 +854,9 @@ def render_longform_16x9(sim, act_spans, all_words, audio_m4a, total_dur, out_mp
     winner = sim["winner"]
     runner_up = sim["runner_up"]
 
-    t_elim_start = act_spans[0]["start"] + min(8.0, act_spans[0]["dur"] * 0.4)
+    t_cold_ff_end = 4.35
+    t_cold_end = 5.20
+    t_elim_start = max(t_cold_end + 0.4, act_spans[0]["start"] + min(8.0, act_spans[0]["dur"] * 0.45))
     t_final_act = act_spans[-1]["start"]
     t_winner_reveal = t_final_act + act_spans[-1]["dur"] * 0.56
 
@@ -853,7 +888,7 @@ def render_longform_16x9(sim, act_spans, all_words, audio_m4a, total_dur, out_mp
     win_stamp = make_stamp_image("LAST MAP STANDING", w=540, h=124, color=th["vermilion"], angle=-7, theme=th)
 
     f_hdr = get_font(FONT_ANTON, 54)
-    f_lb_hdr = get_font(FONT_MONO, 24)
+    f_lb_hdr = get_font(FONT_MONO, 21)
     f_lb_row = get_font(FONT_BOLD, 24)
     f_lb_pct = get_font(FONT_MONO, 23)
     f_pin = get_font(FONT_BLACK, 26)
@@ -910,39 +945,69 @@ def render_longform_16x9(sim, act_spans, all_words, audio_m4a, total_dur, out_mp
             proc.stdin.write(rgb.tobytes())
             continue
 
-        prog = max(0.0, min(1.0, (t - t_elim_start) / max(0.1, t_winner_reveal - t_elim_start)))
-        day_num = int(prog * max_day) if t >= t_elim_start else 0
+        # V22.5 5.2-Second Cold-Open Flash-Forward + Rewind Hook (never spoils winner!)
+        is_cold_ff = (t < t_cold_ff_end)
+        is_cold_rw = (t_cold_ff_end <= t < t_cold_end)
+        is_cold_open = is_cold_ff or is_cold_rw
 
-        if t >= t_winner_reveal:
-            wu = smoothstep((t - t_winner_reveal) / max(0.5, total_dur - t_winner_reveal))
-            zoom = lerp(1.04, 1.55, wu)
-            focus = (lerp(0.50, max(0.24, min(0.76, winner["centroid"][0])), wu),
-                     lerp(0.50, max(0.24, min(0.76, winner["centroid"][1])), wu))
+        if is_cold_ff:
+            prog = smoothstep(t / max(0.1, t_cold_ff_end - 0.1)) * 0.96
+            day_num = int(prog * max_day)
+            zoom = 1.03 + 0.08 * prog
+            focus = (0.50, 0.50)
+        elif is_cold_rw:
+            rw_u = smoothstep((t - t_cold_ff_end) / max(0.1, t_cold_end - t_cold_ff_end))
+            prog = (1.0 - rw_u) * 0.96
+            day_num = int(prog * max_day)
+            zoom = 1.11 - 0.10 * rw_u
+            focus = (0.50, 0.50)
         else:
-            zoom = 1.0 + 0.06 * math.sin(t * 0.08) ** 2
-            focus = (0.50 + 0.02 * math.sin(t * 0.05), 0.50 + 0.015 * math.cos(t * 0.04))
+            prog = max(0.0, min(1.0, (t - t_elim_start) / max(0.1, t_winner_reveal - t_elim_start)))
+            day_num = int(prog * max_day) if t >= t_elim_start else 0
+            if t >= t_winner_reveal:
+                wu = smoothstep((t - t_winner_reveal) / max(0.5, total_dur - t_winner_reveal))
+                zoom = lerp(1.04, 1.55, wu)
+                focus = (lerp(0.50, max(0.24, min(0.76, winner["centroid"][0])), wu),
+                         lerp(0.50, max(0.24, min(0.76, winner["centroid"][1])), wu))
+            else:
+                zoom = 1.0 + 0.06 * math.sin(t * 0.08) ** 2
+                focus = (0.50 + 0.02 * math.sin(t * 0.05), 0.50 + 0.015 * math.cos(t * 0.04))
 
         status_map = {}
         alive_list = []
         recent_out = []
-        for e in ents:
-            nm = e["name"]
-            et = elim_time[nm]
-            if t < et:
-                alive_list.append(e)
-                if nm == winner["name"] and t >= t_winner_reveal:
-                    status_map[nm] = "winner"
-                elif et - t < 2.2:
-                    status_map[nm] = "warning"
+        if is_cold_open:
+            cutoff = int(prog * max(1, total - 2))
+            for idx_e, e in enumerate(ents):
+                nm = e["name"]
+                if idx_e < cutoff:
+                    if is_cold_ff and (cutoff - idx_e) <= max(3, total // 14):
+                        status_map[nm] = "just_fell"
+                        recent_out.append((0.25, e))
+                    else:
+                        status_map[nm] = "eliminated"
                 else:
-                    status_map[nm] = "alive"
-            else:
-                age = t - et
-                if age < 1.6:
-                    status_map[nm] = "just_fell"
-                    recent_out.append((age, e))
+                    alive_list.append(e)
+                    status_map[nm] = "warning" if len(ents) - cutoff <= 6 else "alive"
+        else:
+            for e in ents:
+                nm = e["name"]
+                et = elim_time[nm]
+                if t < et:
+                    alive_list.append(e)
+                    if nm == winner["name"] and t >= t_winner_reveal:
+                        status_map[nm] = "winner"
+                    elif et - t < 2.2:
+                        status_map[nm] = "warning"
+                    else:
+                        status_map[nm] = "alive"
                 else:
-                    status_map[nm] = "eliminated"
+                    age = t - et
+                    if age < 1.6:
+                        status_map[nm] = "just_fell"
+                        recent_out.append((age, e))
+                    else:
+                        status_map[nm] = "eliminated"
 
         frame_np = base_arr.copy()
         draw_paper_cut_map_cv(frame_np, geom, map_box, status_map, zoom=zoom, focus=focus, shadow_offset=(8, 10), border_w=2, theme=th)
@@ -961,11 +1026,16 @@ def render_longform_16x9(sim, act_spans, all_words, audio_m4a, total_dur, out_mp
         draw.rectangle([0, 106, W, 114], fill=th["vermilion"] + (255,))
         draw.text((40, 53), sc.get("thumb_top", "LAST MAP STANDING"), font=f_hdr, fill=th["header_text"] + (255,), anchor="lm")
 
-        day_str = f"ROUND {day_num:02d}" if sc["mechanic"] in ("laser_line", "shrinking_zone") else f"DAY {day_num:03d}"
+        if is_cold_rw:
+            day_str = "<< REWIND"
+        else:
+            day_str = f"ROUND {day_num:02d}" if sc["mechanic"] in ("laser_line", "shrinking_zone") else f"DAY {day_num:03d}"
         pill_rx1 = (W - 28) if lb_on_left else (lb_x0 - 28)
         pill_rx0 = pill_rx1 - 247
-        draw.rounded_rectangle([pill_rx0, 22, pill_rx1, 84], radius=8, fill=th["vermilion"] + (255,))
-        draw.text(((pill_rx0 + pill_rx1) // 2, 53), day_str, font=get_font(FONT_ANTON, 44), fill=th["header_text"] + (255,), anchor="mm")
+        pill_col = th["warning_ochre"] if is_cold_rw else th["vermilion"]
+        pill_txt_col = th["ink_black"] if is_cold_rw else th["header_text"]
+        draw.rounded_rectangle([pill_rx0, 22, pill_rx1, 84], radius=8, fill=pill_col + (255,))
+        draw.text(((pill_rx0 + pill_rx1) // 2, 53), day_str, font=get_font(FONT_ANTON, 44), fill=pill_txt_col + (255,), anchor="mm")
 
         # Chapter Progress Bar across the map region
         ch_span_w = (map_x_max - map_x_min - 40)
@@ -981,8 +1051,24 @@ def render_longform_16x9(sim, act_spans, all_words, audio_m4a, total_dur, out_mp
             draw.rectangle([cx0, 120, cx1, 146], fill=bg_c + (255,))
             draw.text(((cx0 + cx1) // 2, 133), f"ACT {ci + 1}", font=f_chap, fill=txt_c + (255,), anchor="mm")
 
-        # Callout pin on most recently eliminated entity
-        if recent_out:
+        if is_cold_open:
+            # Cold-Open Editorial Banner across upper map viewport (never obscures map center)
+            bn_x0 = map_x_min + 36
+            bn_x1 = map_x_max - 36
+            bn_y0, bn_y1 = 160, 224
+            if is_cold_ff:
+                draw.rectangle([bn_x0, bn_y0, bn_x1, bn_y1], fill=th["ink_black"] + (238,))
+                draw.rectangle([bn_x0, bn_y0, bn_x0 + 16, bn_y1], fill=th["vermilion"] + (255,))
+                bn_txt = f"FLASH-FORWARD  //  {total - 1} FALL — WHO SURVIVES TO DAY {max_day}?"
+                draw.text(((bn_x0 + bn_x1) // 2, (bn_y0 + bn_y1) // 2), bn_txt,
+                          font=get_font(FONT_ANTON, 36), fill=th["header_text"] + (255,), anchor="mm")
+            else:
+                draw.rectangle([bn_x0, bn_y0, bn_x1, bn_y1], fill=th["vermilion"] + (245,))
+                bn_txt = "<<  REWINDING TO DAY 000  —  START OF SIMULATION  <<"
+                draw.text(((bn_x0 + bn_x1) // 2, (bn_y0 + bn_y1) // 2), bn_txt,
+                          font=get_font(FONT_ANTON, 38), fill=th["header_text"] + (255,), anchor="mm")
+        elif recent_out:
+            # Callout pin on most recently eliminated entity
             recent_out.sort(key=lambda x: x[0])
             _, fallen = recent_out[0]
             px, py = transform_pt(*fallen["centroid"], map_box, zoom=zoom, focus=focus)
@@ -998,19 +1084,31 @@ def render_longform_16x9(sim, act_spans, all_words, audio_m4a, total_dur, out_mp
         draw.rectangle([lb_x0, 114, lb_x1, H - 104], fill=th["ink_black"] + (255,))
         div_x = lb_x1 if lb_on_left else lb_x0
         draw.line([(div_x, 114), (div_x, H - 104)], fill=th["vermilion"] + (255,), width=5)
-        draw.text((lb_x0 + 28, 142), f"STILL STANDING  ({len(alive_list)} / {total})", font=f_lb_hdr, fill=th["warning_ochre"] + (255,))
 
-        leaders = list(reversed(alive_list[-10:]))
-        yy = 192
-        for rank_i, ent in enumerate(leaders[:10]):
-            is_top1 = (rank_i == 0 and len(alive_list) == 1)
-            row_bg = th["alive_blue"] if is_top1 else th["row_bg"]
-            draw.rectangle([lb_x0 + 22, yy, lb_x1 - 22, yy + 58], fill=row_bg + (255,))
-            draw.text((lb_x0 + 36, yy + 29), f"{rank_i + 1:02d}  {short_name(ent['name']).upper()[:13]}", font=f_lb_row, fill=th["header_text"] + (255,), anchor="lm")
-            sc_pct = min(99, max(12, int(ent["score"])))
-            vcol = th["warning_ochre"] if status_map.get(ent["name"]) == "warning" else th["stat_ok"]
-            draw.text((lb_x1 - 32, yy + 29), f"{sc_pct}%", font=f_lb_pct, fill=vcol + (255,), anchor="rm")
-            yy += 68
+        if is_cold_open:
+            draw.text((lb_x0 + 24, 144), f"FLASH-FORWARD ({len(alive_list)}/{total})", font=f_lb_hdr, fill=th["warning_ochre"] + (255,))
+            yy = 192
+            for rank_i in range(min(10, max(2, len(alive_list)))):
+                is_final2 = (rank_i < 2)
+                row_bg = th["vermilion"] if (rank_i == 0 and len(alive_list) <= 4) else (th["alive_blue"] if (rank_i == 1 and len(alive_list) <= 4) else th["row_bg"])
+                draw.rectangle([lb_x0 + 22, yy, lb_x1 - 22, yy + 58], fill=row_bg + (255,))
+                lbl_row = f"{rank_i + 1:02d}  FINALIST  ???" if is_final2 else f"{rank_i + 1:02d}  SURVIVOR  ???"
+                draw.text((lb_x0 + 36, yy + 29), lbl_row, font=f_lb_row, fill=th["header_text"] + (255,), anchor="lm")
+                draw.text((lb_x1 - 32, yy + 29), "LOCKED", font=f_lb_pct, fill=th["warning_ochre"] + (255,), anchor="rm")
+                yy += 68
+        else:
+            draw.text((lb_x0 + 24, 144), f"STILL STANDING ({len(alive_list)}/{total})", font=f_lb_hdr, fill=th["warning_ochre"] + (255,))
+            leaders = list(reversed(alive_list[-10:]))
+            yy = 192
+            for rank_i, ent in enumerate(leaders[:10]):
+                is_top1 = (rank_i == 0 and len(alive_list) == 1)
+                row_bg = th["alive_blue"] if is_top1 else th["row_bg"]
+                draw.rectangle([lb_x0 + 22, yy, lb_x1 - 22, yy + 58], fill=row_bg + (255,))
+                draw.text((lb_x0 + 36, yy + 29), f"{rank_i + 1:02d}  {short_name(ent['name']).upper()[:13]}", font=f_lb_row, fill=th["header_text"] + (255,), anchor="lm")
+                sc_pct = min(99, max(12, int(ent["score"])))
+                vcol = th["warning_ochre"] if status_map.get(ent["name"]) == "warning" else th["stat_ok"]
+                draw.text((lb_x1 - 32, yy + 29), f"{sc_pct}%", font=f_lb_pct, fill=vcol + (255,), anchor="rm")
+                yy += 68
 
         if t >= t_winner_reveal:
             img.alpha_composite(win_stamp, (map_x_max - win_stamp.width - 36, 170))
