@@ -169,7 +169,7 @@ def upload_video_to_github_release(video_path):
     return public_url
 
 
-def publish_tiktok_via_buffer(video_path, caption, delay_minutes=0, thumbnail_offset_ms=450):
+def publish_tiktok_via_buffer(video_path, caption, delay_minutes=0, thumbnail_offset_ms=100):
     """
     Publish or schedule a 100% PUBLIC TikTok video via Buffer's official GraphQL API!
       - delay_minutes == 0 -> mode: shareNow (publishes PUBLICLY RIGHT NOW, 0 queue slots used!)

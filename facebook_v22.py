@@ -106,22 +106,26 @@ def upload_fb_reel(mp4_path, description, thumb_path=None):
     d3 = _check_fb_resp(r3, "REEL_FINISH")
     print(f"[FB REEL LIVE!] video_id={video_id} resp={d3}")
 
-    # Phase 4 (optional non-blocking): Attach custom 9:16 Reel Cover Photo
+    # Phase 4 (optional non-blocking): Attach custom 9:16 Reel Cover Photo (with brief processing wait + retry)
     if thumb_path and os.path.exists(thumb_path):
-        try:
-            with open(thumb_path, "rb") as tfh:
-                rt = requests.post(
-                    f"{GRAPH_URL}/{video_id}/thumbnails",
-                    data={"is_preferred": "true", "access_token": tok},
-                    files={"source": (os.path.basename(thumb_path), tfh, "image/jpeg")},
-                    timeout=90,
-                )
-            if rt.status_code < 400 and "error" not in rt.text:
-                print(f"[FB REEL COVER OK!] video_id={video_id}")
-            else:
-                print(f"[FB REEL COVER WARN — non-blocking]: {rt.status_code} {rt.text[:200]}")
-        except Exception as e:
-            print(f"[FB REEL COVER WARN — non-blocking]: {e}")
+        import time as _t
+        for attempt in range(2):
+            try:
+                _t.sleep(2.5 if attempt == 0 else 4.0)
+                with open(thumb_path, "rb") as tfh:
+                    rt = requests.post(
+                        f"{GRAPH_URL}/{video_id}/thumbnails",
+                        data={"is_preferred": "true", "access_token": tok},
+                        files={"source": (os.path.basename(thumb_path), tfh, "image/jpeg")},
+                        timeout=90,
+                    )
+                if rt.status_code < 400 and "error" not in rt.text:
+                    print(f"[FB REEL COVER OK!] video_id={video_id} (attempt {attempt+1})")
+                    break
+                else:
+                    print(f"[FB REEL COVER WARN attempt {attempt+1}]: {rt.status_code} {rt.text[:200]}")
+            except Exception as e:
+                print(f"[FB REEL COVER WARN attempt {attempt+1}]: {e}")
 
     return video_id
 
@@ -270,7 +274,12 @@ def _aspect_box(x, y, w, h, arena):
 
 
 def render_fb_carousel_slides(sim, out_dir):
-    """Render 3 high-engagement 1080x1080 themed Facebook Carousel Cards (V22.3 Multi-Theme)."""
+    """Render 3 high-engagement 1080x1080 V23 Geo-Cinema Satellite Facebook Carousel Cards."""
+    from renderer_v23_geocine import render_fb_carousel_slides_v23
+    return render_fb_carousel_slides_v23(sim, out_dir)
+
+
+def _legacy_render_fb_carousel_slides(sim, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     W, H = 1080, 1080
     sc = sim["scenario"]

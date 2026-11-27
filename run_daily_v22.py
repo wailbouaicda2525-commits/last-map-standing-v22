@@ -30,7 +30,7 @@ from voice_sfx_v22 import (
     synthesize_saul_bass_soundscape,
     mix_voice_and_sfx,
 )
-from renderer_v22_saul_bass import (
+from renderer_v23_geocine import (
     render_thumbnail_16x9,
     render_short_thumbnail_9x16,
     render_short_9x16,
@@ -452,10 +452,10 @@ def run_tiktok_65s(cfg, sim, out_dir, dry_run=False, batch_idx=1, batch_total=1,
 
     pub_id = ""
     if buffer_is_configured():
-        # V22.8 Truly Randomized 24/7 Human-Like Spacing (generated fresh via OS entropy every day!)
-        # Uses max 4 of 10 rolling Buffer Free queue slots -> 120+ PUBLIC TikToks/month for $0 FOREVER!
+        # V23 Geo-Cinema Satellite + Truly Randomized 24/7 Human-Like Spacing!
+        # thumbnail_offset_ms=100 locks the exact 0.00-0.45s Viral Satellite Cover Miniature on TikTok profile grid!
         delay_m = max(0, int(delay_minutes))
-        pub_id = publish_tiktok_via_buffer(out_mp4, caption, delay_minutes=delay_m, thumbnail_offset_ms=450)
+        pub_id = publish_tiktok_via_buffer(out_mp4, caption, delay_minutes=delay_m, thumbnail_offset_ms=100)
         hrs, mins = divmod(delay_m, 60)
         slot_note = "LIVE NOW!" if delay_m == 0 else f"RANDOM SCHEDULED PUBLIC (+{hrs}h {mins:02d}m)"
         send_telegram(
