@@ -1,12 +1,12 @@
 name: Last Map Standing — Facebook Photo Carousels & Debate Posts (2x/day US Peak)
 
 on:
-  schedule:
+  # schedule: disabled (triggered on-time via cron-job.org workflow_dispatch)
     # US Peak Facebook Monetization Engagement Hours ($0/mo Direct Graph API):
     #   14:23 UTC = 9:23 AM EST / 6:23 AM PST -> 3-Slide Saul Bass Photo Carousel
     #   22:41 UTC = 5:41 PM EST / 2:41 PM PST -> High-Debate US Text Discussion Post
-    - cron: '23 14 * * *'
-    - cron: '41 22 * * *'
+    # - cron: '23 14 * * *'
+    # - cron: '41 22 * * *'
   workflow_dispatch:
     inputs:
       post_type:
