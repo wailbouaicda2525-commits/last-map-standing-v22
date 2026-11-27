@@ -100,6 +100,44 @@ def build_banner():
     print("SAVED BANNER:", out)
 
 
+def build_fb_cover():
+    """Official Facebook Page Cover (1640x624 — safe for Desktop & Mobile crop)."""
+    W, H = 1640, 624
+    bg = make_saul_bass_paper_bg(W, H, seed=62)
+    arr = np.array(bg, dtype=np.uint8)
+    world = load_arena_geometry("world")
+    status = {}
+    for i, nm in enumerate(sorted(world.keys())):
+        if nm in ("United States of America", "Canada", "Norway", "Australia", "Brazil", "Switzerland", "Algeria"):
+            status[nm] = "alive"
+        elif i % 8 == 0:
+            status[nm] = "warning"
+        elif i % 11 == 0:
+            status[nm] = "just_fell"
+        else:
+            status[nm] = "eliminated"
+    draw_paper_cut_map_cv(arr, world, (120, 26, W - 240, H - 52), status, shadow_offset=(8, 10), border_w=2)
+
+    img = Image.fromarray(arr, "RGB").convert("RGBA")
+    draw = ImageDraw.Draw(img, "RGBA")
+
+    # Crisp centered Saul Bass editorial band inside Facebook Mobile/Desktop Safe Area (1280x500 centered)
+    draw.rectangle([0, 148, W, 476], fill=(20, 20, 18, 240))
+    draw.rectangle([0, 148, W, 160], fill=PALETTE["vermilion"] + (255,))
+    draw.rectangle([0, 464, W, 476], fill=PALETTE["warning_ochre"] + (255,))
+
+    draw.text((W // 2, 248), "LAST MAP STANDING", font=get_font(FONT_ANTON, 128), fill=PALETTE["cream_text"] + (255,), anchor="mm")
+    draw.text((W // 2, 344), "50 U.S. STATES & 195 NATIONS  •  ONLY 1 SURVIVES", font=get_font(FONT_MONO, 24), fill=PALETTE["warning_ochre"] + (255,), anchor="mm")
+
+    draw.rounded_rectangle([W // 2 - 220, 386, W // 2 + 220, 438], radius=8, fill=PALETTE["vermilion"] + (255,))
+    draw.text((W // 2, 412), "DATA-DRIVEN MAP SIMULATIONS", font=get_font(FONT_BLACK, 22), fill=PALETTE["cream_text"] + (255,), anchor="mm")
+
+    out = os.path.join(BRAND_DIR, "LastMapStanding-Facebook-Cover-1640x624.png")
+    img.convert("RGB").save(out, optimize=True)
+    print("SAVED FB COVER:", out)
+
+
 if __name__ == "__main__":
     build_avatar()
     build_banner()
+    build_fb_cover()

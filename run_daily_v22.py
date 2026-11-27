@@ -28,6 +28,15 @@ from renderer_v22_saul_bass import (
     render_longform_16x9,
 )
 from uploader_v22 import upload_video_to_youtube, send_telegram
+from facebook_v22 import (
+    fb_is_configured,
+    upload_fb_reel,
+    upload_fb_long_video,
+    upload_fb_photo_carousel,
+    upload_fb_text_post,
+    render_fb_carousel_slides,
+    generate_fb_text_discussion,
+)
 
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
@@ -82,7 +91,19 @@ def run_short(cfg, sim, out_dir, dry_run=False, privacy="public"):
         category_id=cfg.get("category_id", "27"),
     )
     mark_published(sc, mode="short", video_id=vid_id)
-    send_telegram(f"🗺️ <b>LAST MAP STANDING (Short LIVE!)</b>\n{title}\nhttps://youtube.com/shorts/{vid_id}")
+
+    # Auto cross-post exact same 9:16 MP4 directly to Facebook Reels via Graph API ($0/mo!)
+    fb_note = ""
+    if fb_is_configured():
+        try:
+            fb_desc = f"{sc['title_short']}\n\n{sc['premise']}\n\nWould your home survive? Tell us below! 👇\n\n#LastMapStanding #MapSimulation #Geography #USStates #WorldMap #DataVisualization"
+            fb_vid = upload_fb_reel(out_mp4, fb_desc)
+            if fb_vid:
+                fb_note = f"\n📘 FB Reel LIVE (id={fb_vid})"
+        except Exception as e:
+            print(f"[FB REEL WARN — non-blocking]: {e}")
+
+    send_telegram(f"🗺️ <b>LAST MAP STANDING (Short LIVE!)</b>\n{title}\nhttps://youtube.com/shorts/{vid_id}{fb_note}")
     return out_mp4, vid_id
 
 
@@ -195,13 +216,67 @@ def run_longform(cfg, sim, out_dir, dry_run=False, demo_fast=False, privacy="pub
         category_id=cfg.get("category_id", "27"),
     )
     mark_published(sc, mode="longform", video_id=vid_id)
-    send_telegram(f"🗺️ <b>LAST MAP STANDING (Long-Form LIVE!)</b>\n{title}\nhttps://www.youtube.com/watch?v={vid_id}")
+
+    # Auto cross-post exact same 16:9 Documentary + Thumbnail directly to Facebook In-Stream Video ($0/mo!)
+    fb_note = ""
+    if fb_is_configured():
+        try:
+            fb_desc = f"{sc['title_long']}\n\n{sc['premise']}\n\nCHAPTERS:\n{chapters_str}\n\nWhich territory surprised you most? Drop your take below! 👇\n\n#LastMapStanding #GeographyDocumentary #MapSimulation #DataVisualization"
+            fb_vid = upload_fb_long_video(out_mp4, title=title, description=fb_desc, thumb_path=thumb_jpg)
+            if fb_vid:
+                fb_note = f"\n📘 FB Long Video LIVE (id={fb_vid})"
+        except Exception as e:
+            print(f"[FB LONG VIDEO WARN — non-blocking]: {e}")
+
+    send_telegram(f"🗺️ <b>LAST MAP STANDING (Long-Form LIVE!)</b>\n{title}\nhttps://www.youtube.com/watch?v={vid_id}{fb_note}")
     return out_mp4, vid_id
 
 
+def run_fb_carousel(cfg, sim, out_dir, dry_run=False):
+    sc = sim["scenario"]
+    print(f"[FB CAROUSEL] Scenario: {sc['id']} | {sc['title_short']}")
+    slides = render_fb_carousel_slides(sim, out_dir)
+    print(f"[FB CAROUSEL] Rendered 3 square Saul Bass slides: {slides}")
+    win = sim["winner"]["name"].replace("United States of America", "USA")
+    ru = sim["runner_up"]["name"].replace("United States of America", "USA")
+    f1 = sim["first_out"][0]["name"].replace("United States of America", "USA")
+    msg = (
+        f"🗺️ {sc['title_long']}\n\n"
+        f"{sc['premise']}\n\n"
+        f"Swipe through all 3 slides to see why {f1} falls first — and who survives the final {ru} vs {win} showdown!\n\n"
+        f"Would YOUR home survive? Comment below 👇\n\n"
+        f"#LastMapStanding #Geography #MapSimulation #DataVisualization #USStates #WorldMap"
+    )
+    if dry_run:
+        return slides, msg
+    if not fb_is_configured():
+        print("[FB CAROUSEL] Skipped upload (set FB_PAGE_ID & FB_PAGE_ACCESS_TOKEN in GitHub Secrets)")
+        return slides, None
+    post_id = upload_fb_photo_carousel(slides, msg)
+    mark_published(sc, mode="fb_carousel", video_id=post_id or "")
+    send_telegram(f"📘 <b>LAST MAP STANDING (FB 3-Slide Photo Carousel LIVE!)</b>\n{sc['title_short']}\npost_id={post_id}")
+    return slides, post_id
+
+
+def run_fb_text(cfg, sim, dry_run=False):
+    sc = sim["scenario"]
+    print(f"[FB TEXT] Scenario: {sc['id']} | {sc['title_short']}")
+    msg = generate_fb_text_discussion(sim)
+    print("[FB TEXT] Preview:\n" + msg)
+    if dry_run:
+        return msg, None
+    if not fb_is_configured():
+        print("[FB TEXT] Skipped upload (set FB_PAGE_ID & FB_PAGE_ACCESS_TOKEN in GitHub Secrets)")
+        return msg, None
+    post_id = upload_fb_text_post(msg)
+    mark_published(sc, mode="fb_text", video_id=post_id or "")
+    send_telegram(f"💬 <b>LAST MAP STANDING (FB Text Debate Post LIVE!)</b>\n{sc['title_short']}\npost_id={post_id}")
+    return msg, post_id
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Last Map Standing V22 Autopilot")
-    parser.add_argument("--mode", choices=["short", "longform"], default="short")
+    parser = argparse.ArgumentParser(description="Last Map Standing V22 Autopilot (YouTube + Facebook Graph API)")
+    parser.add_argument("--mode", choices=["short", "longform", "fb_carousel", "fb_text"], default="short")
     parser.add_argument("--scenario-id", default=None)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--demo-fast", action="store_true")
@@ -221,8 +296,12 @@ def main():
 
     if args.mode == "short":
         run_short(cfg, sim, out_dir, dry_run=args.dry_run, privacy=args.privacy)
-    else:
+    elif args.mode == "longform":
         run_longform(cfg, sim, out_dir, dry_run=args.dry_run, demo_fast=args.demo_fast, privacy=args.privacy)
+    elif args.mode == "fb_carousel":
+        run_fb_carousel(cfg, sim, out_dir, dry_run=args.dry_run)
+    else:
+        run_fb_text(cfg, sim, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

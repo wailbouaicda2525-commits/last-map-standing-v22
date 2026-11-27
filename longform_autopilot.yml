@@ -1,0 +1,70 @@
+name: Last Map Standing — Adaptive Long-Form Documentary (US Peak, Every 2 Days)
+
+on:
+  schedule:
+    # US Prime-Time Peak (off-peak :37 UTC minute every 2 days):
+    #   Starts rendering at 20:37 UTC (3:37 PM EST / 12:37 PM PST)
+    #   Goes LIVE on YouTube right at ~4:00 PM EST / 1:00 PM PST (US Desktop & TV Prime-Time RPM Peak!)
+    - cron: '37 20 1-31/2 * *'
+  workflow_dispatch:
+    inputs:
+      scenario_id:
+        description: 'Optional specific scenario_id (leave blank for auto-next)'
+        required: false
+        default: ''
+      privacy:
+        description: 'YouTube privacy status'
+        required: false
+        default: 'public'
+        type: choice
+        options:
+          - public
+          - unlisted
+          - private
+
+permissions:
+  contents: write
+
+jobs:
+  publish_longform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Generate & Publish Full 10-14m Map Documentary + Thumbnail
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+        run: |
+          EXTRA=""
+          if [ -n "${{ github.event.inputs.scenario_id }}" ]; then
+            EXTRA="--scenario-id ${{ github.event.inputs.scenario_id }}"
+          fi
+          PRIV="${{ github.event.inputs.privacy }}"
+          [ -z "$PRIV" ] && PRIV="public"
+          python3 run_daily_v22.py --mode longform --privacy "$PRIV" $EXTRA
+
+      - name: Commit published_history.json (keeps 5+ year cron alive forever!)
+        run: |
+          git config user.name "LastMapStanding Bot"
+          git config user.email "bot@lastmapstanding.local"
+          git add published_history.json
+          git diff --staged --quiet || git commit -m "chore: log published Long-Form [skip ci]"
+          git push

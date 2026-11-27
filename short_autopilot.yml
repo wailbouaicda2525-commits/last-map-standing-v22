@@ -1,0 +1,71 @@
+name: Last Map Standing — Daily Shorts Autopilot (3x/day US Peak)
+
+on:
+  schedule:
+    # US Prime-Time Peak Hours (off-peak odd :19 UTC minute avoids GitHub Actions :00/:30 queue lag):
+    #   16:19 UTC = 11:19 AM EST / 8:19 AM PST (US Lunch + West Coast Morning)
+    #   21:19 UTC =  4:19 PM EST / 1:19 PM PST (US After-Work / School Rush)
+    #   01:19 UTC =  8:19 PM EST / 5:19 PM PST (US Prime-Time Evening Scroll)
+    - cron: '19 1,16,21 * * *'
+  workflow_dispatch:
+    inputs:
+      scenario_id:
+        description: 'Optional specific scenario_id (leave blank for auto-next)'
+        required: false
+        default: ''
+      privacy:
+        description: 'YouTube privacy status'
+        required: false
+        default: 'public'
+        type: choice
+        options:
+          - public
+          - unlisted
+          - private
+
+permissions:
+  contents: write
+
+jobs:
+  publish_short:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Generate & Publish Saul Bass Map Short
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+        run: |
+          EXTRA=""
+          if [ -n "${{ github.event.inputs.scenario_id }}" ]; then
+            EXTRA="--scenario-id ${{ github.event.inputs.scenario_id }}"
+          fi
+          PRIV="${{ github.event.inputs.privacy }}"
+          [ -z "$PRIV" ] && PRIV="public"
+          python3 run_daily_v22.py --mode short --privacy "$PRIV" $EXTRA
+
+      - name: Commit published_history.json (keeps 5+ year cron alive forever!)
+        run: |
+          git config user.name "LastMapStanding Bot"
+          git config user.email "bot@lastmapstanding.local"
+          git add published_history.json
+          git diff --staged --quiet || git commit -m "chore: log published Short [skip ci]"
+          git push
