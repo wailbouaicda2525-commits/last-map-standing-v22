@@ -1,0 +1,87 @@
+name: Last Map Standing — 4x/Day RANDOM TikTok 65s+ PUBLIC Autopilot (Buffer Free)
+
+on:
+  schedule:
+    # Launches once daily at 06:11 UTC (07:11 Algeria/Paris), then uses OS-random human spacing
+    # for 4x PUBLIC Creator Rewards videos (64-70s + FINAL 2 VS Showdown) with NO fixed clock:
+    #   Example Day 1: +0h42m -> gap +4h35m -> gap +3h10m -> gap +5h08m -> (~10h25m overnight!)
+    #   Example Day 2: +1h54m -> gap +3h22m -> gap +5h14m -> gap +4h09m -> (~9h21m overnight!)
+    # Uses max 4 of 10 rolling Buffer Free queue slots -> 120+ PUBLIC TikToks/month for $0 FOREVER!
+    - cron: '11 6 * * *'
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Number of PUBLIC TikTok 64-70s videos to generate & randomly schedule (default 4)'
+        required: false
+        default: '4'
+        type: choice
+        options:
+          - '4'
+          - '1'
+          - '2'
+          - '3'
+          - '5'
+      scenario_id:
+        description: 'Optional specific scenario_id for Video #1 (leave blank for auto-next)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  publish_tiktok_public_batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Generate 4x 64-70s Creator Rewards Videos & Randomly Schedule PUBLIC via Buffer Free
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_TIKTOK_CHANNEL_ID: ${{ secrets.BUFFER_TIKTOK_CHANNEL_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          CNT="${{ github.event.inputs.count }}"
+          [ -z "$CNT" ] && CNT="4"
+          EXTRA=""
+          if [ -n "${{ github.event.inputs.scenario_id }}" ]; then
+            EXTRA="--scenario-id ${{ github.event.inputs.scenario_id }}"
+          fi
+          python3 run_daily_v22.py --mode tiktok --count "$CNT" --out-dir tiktok_out $EXTRA
+
+      - name: Upload All 4 Videos + 9:16 Covers + SEO Captions as Backup Artifact (7 days)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiktok-public-batch-${{ github.run_number }}
+          path: |
+            tiktok_out/*LMS_TIKTOK_65S_*.mp4
+            tiktok_out/*LMS_TIKTOK_COVER_*.jpg
+            tiktok_out/*LMS_TIKTOK_CAPTION_*.txt
+            tiktok_out/ALL_TIKTOK_CAPTIONS.txt
+          retention-days: 7
+
+      - name: Commit published_history.json
+        run: |
+          git config user.name "LastMapStanding Bot"
+          git config user.email "bot@lastmapstanding.local"
+          git pull --rebase origin main || true
+          git add published_history.json
+          git diff --staged --quiet || git commit -m "chore: log 4x RANDOM TikTok PUBLIC 64-70s batch [skip ci]"
+          git push
