@@ -1,11 +1,11 @@
 name: Last Map Standing — Daily Shorts + FB Reels Autopilot (2x/day US Peak)
 
 on:
-  schedule:
+  # schedule: disabled (triggered on-time via cron-job.org workflow_dispatch)
     # 2x/day US Prime-Time Peak (YouTube Shorts + Facebook Reels together):
     #   16:19 UTC = 11:19 AM EST / 8:19 AM PST (US Lunch + West Coast Morning)
     #   21:19 UTC =  4:19 PM EST / 1:19 PM PST (US After-Work / Evening Peak)
-    - cron: '19 16,21 * * *'
+    # - cron: '19 16,21 * * *'
   workflow_dispatch:
     inputs:
       scenario_id:
