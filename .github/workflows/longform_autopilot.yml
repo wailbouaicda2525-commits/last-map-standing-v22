@@ -1,11 +1,11 @@
 name: Last Map Standing — Adaptive Long-Form Documentary (US Peak, Every 2 Days)
 
 on:
-  schedule:
+  # schedule: disabled (triggered on-time via cron-job.org workflow_dispatch)
     # US Prime-Time Peak (off-peak :37 UTC minute every 2 days):
     #   Starts rendering at 20:37 UTC (3:37 PM EST / 12:37 PM PST)
     #   Goes LIVE on YouTube right at ~4:00 PM EST / 1:00 PM PST (US Desktop & TV Prime-Time RPM Peak!)
-    - cron: '37 20 1-31/2 * *'
+    # - cron: '37 20 1-31/2 * *'
   workflow_dispatch:
     inputs:
       scenario_id:
