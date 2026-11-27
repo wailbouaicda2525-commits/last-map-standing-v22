@@ -24,6 +24,7 @@ from voice_sfx_v22 import (
 )
 from renderer_v22_saul_bass import (
     render_thumbnail_16x9,
+    render_short_thumbnail_9x16,
     render_short_9x16,
     render_longform_16x9,
 )
@@ -69,6 +70,11 @@ def run_short(cfg, sim, out_dir, dry_run=False, privacy="public"):
     sfx_wav = os.path.join(out_dir, "short_sfx.wav")
     mixed_m4a = os.path.join(out_dir, "short_mixed.m4a")
     out_mp4 = os.path.join(out_dir, f"LMS_SHORT_{sc['id']}.mp4")
+    short_thumb_jpg = os.path.join(out_dir, f"LMS_SHORT_THUMB_{sc['id']}.jpg")
+
+    # Generate matching 9:16 Custom Shorts & FB Reels Poster Miniature!
+    render_short_thumbnail_9x16(sim, short_thumb_jpg)
+    print(f"[SHORT] Custom 9:16 Thumbnail rendered: {short_thumb_jpg}")
 
     words = synthesize_voice(
         script,
@@ -85,7 +91,7 @@ def run_short(cfg, sim, out_dir, dry_run=False, privacy="public"):
     synthesize_saul_bass_soundscape(total_dur, elim_cues, [1.8, t_win - 1.2], t_win, sfx_wav)
     mix_voice_and_sfx(voice_mp3, sfx_wav, mixed_m4a, total_dur)
 
-    print(f"[SHORT] Rendering {total_dur:.1f}s Saul Bass Paper-Cut Short (1080x1920)...")
+    print(f"[SHORT] Rendering {total_dur:.1f}s V22.4 Themed Short (1080x1920)...")
     render_short_9x16(sim, words, mixed_m4a, total_dur, out_mp4, fps=30)
     print(f"[SHORT] Render complete: {out_mp4} ({os.path.getsize(out_mp4) / 1e6:.2f} MB)")
 
@@ -100,16 +106,18 @@ def run_short(cfg, sim, out_dir, dry_run=False, privacy="public"):
         description=desc,
         tags=cfg["default_tags"],
         privacy=privacy,
+        thumbnail_path=short_thumb_jpg,
         category_id=cfg.get("category_id", "27"),
+        wait_for_processing=True,
     )
     mark_published(sc, mode="short", video_id=vid_id)
 
-    # Auto cross-post exact same 9:16 MP4 directly to Facebook Reels via Graph API ($0/mo!)
+    # Auto cross-post exact same 9:16 MP4 + custom 9:16 cover directly to Facebook Reels ($0/mo!)
     fb_note = ""
     if fb_is_configured():
         try:
             fb_desc = f"{sc['title_short']}\n\n{sc['premise']}\n\nWould your home survive? Tell us below! 👇\n\n#LastMapStanding #MapSimulation #Geography #USStates #WorldMap #DataVisualization"
-            fb_vid = upload_fb_reel(out_mp4, fb_desc)
+            fb_vid = upload_fb_reel(out_mp4, fb_desc, thumb_path=short_thumb_jpg)
             if fb_vid:
                 fb_note = f"\n📘 FB Reel LIVE (id={fb_vid})"
         except Exception as e:

@@ -58,9 +58,9 @@ def _check_fb_resp(resp, label):
 
 
 # =====================================================================
-# 1) FACEBOOK REELS UPLOAD (9:16 MP4 -> 3-PHASE RUPLOAD)
+# 1) FACEBOOK REELS UPLOAD (9:16 MP4 -> 3-PHASE RUPLOAD + CUSTOM COVER)
 # =====================================================================
-def upload_fb_reel(mp4_path, description):
+def upload_fb_reel(mp4_path, description, thumb_path=None):
     pid, tok = _fb_creds()
     if not (pid and tok):
         print("[FB REEL] Skipped (FB_PAGE_ID / FB_PAGE_ACCESS_TOKEN not configured)")
@@ -105,6 +105,24 @@ def upload_fb_reel(mp4_path, description):
     )
     d3 = _check_fb_resp(r3, "REEL_FINISH")
     print(f"[FB REEL LIVE!] video_id={video_id} resp={d3}")
+
+    # Phase 4 (optional non-blocking): Attach custom 9:16 Reel Cover Photo
+    if thumb_path and os.path.exists(thumb_path):
+        try:
+            with open(thumb_path, "rb") as tfh:
+                rt = requests.post(
+                    f"{GRAPH_URL}/{video_id}/thumbnails",
+                    data={"is_preferred": "true", "access_token": tok},
+                    files={"source": (os.path.basename(thumb_path), tfh, "image/jpeg")},
+                    timeout=90,
+                )
+            if rt.status_code < 400 and "error" not in rt.text:
+                print(f"[FB REEL COVER OK!] video_id={video_id}")
+            else:
+                print(f"[FB REEL COVER WARN — non-blocking]: {rt.status_code} {rt.text[:200]}")
+        except Exception as e:
+            print(f"[FB REEL COVER WARN — non-blocking]: {e}")
+
     return video_id
 
 

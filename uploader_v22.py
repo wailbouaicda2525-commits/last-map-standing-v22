@@ -3,6 +3,7 @@ uploader_v22.py — Zero-Touch YouTube Data API v3 Uploader + Thumbnail Setter +
 Uses identical GitHub Secret names as V20 (YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN).
 """
 import os
+import time
 import urllib.parse
 import urllib.request
 
@@ -50,7 +51,7 @@ def get_youtube_service():
     return build("youtube", "v3", credentials=creds, cache_discovery=False)
 
 
-def upload_video_to_youtube(mp4_path, title, description, tags, privacy="public", thumbnail_path=None, category_id="27"):
+def upload_video_to_youtube(mp4_path, title, description, tags, privacy="public", thumbnail_path=None, category_id="27", wait_for_processing=False):
     from googleapiclient.http import MediaFileUpload
 
     yt = get_youtube_service()
@@ -79,13 +80,34 @@ def upload_video_to_youtube(mp4_path, title, description, tags, privacy="public"
     print(f"[YOUTUBE LIVE!] https://www.youtube.com/watch?v={vid_id} (privacy={privacy})")
 
     if thumbnail_path and os.path.exists(thumbnail_path):
-        try:
-            yt.thumbnails().set(
-                videoId=vid_id,
-                media_body=MediaFileUpload(thumbnail_path, mimetype="image/jpeg"),
-            ).execute()
-            print("[THUMBNAIL UPLOADED OK!]")
-        except Exception as e:
-            print(f"[THUMBNAIL SKIPPED — verify channel phone at youtube.com/verify]: {e}")
+        # YouTube Data API (Nov 2026+) allows custom 9:16 thumbnails on Shorts once processing completes
+        if wait_for_processing:
+            print("  [YT THUMB] Waiting for Short processing before setting custom 9:16 thumbnail...", flush=True)
+            for _ in range(15):
+                time.sleep(5)
+                try:
+                    info = yt.videos().list(part="processingDetails", id=vid_id).execute()
+                    items = info.get("items", [])
+                    pstat = items[0].get("processingDetails", {}).get("processingStatus", "") if items else ""
+                    if pstat == "succeeded":
+                        print("  [YT THUMB] Processing succeeded!", flush=True)
+                        break
+                except Exception:
+                    pass
+
+        for attempt in range(3):
+            try:
+                yt.thumbnails().set(
+                    videoId=vid_id,
+                    media_body=MediaFileUpload(thumbnail_path, mimetype="image/jpeg"),
+                ).execute()
+                print("[THUMBNAIL UPLOADED OK!]")
+                break
+            except Exception as e:
+                if attempt < 2 and wait_for_processing:
+                    print(f"  [THUMBNAIL RETRY {attempt + 1}] Waiting 10s ({e})")
+                    time.sleep(10)
+                else:
+                    print(f"[THUMBNAIL SKIPPED — non-blocking]: {e}")
 
     return vid_id

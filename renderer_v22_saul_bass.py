@@ -329,6 +329,160 @@ def render_thumbnail_16x9(sim, out_jpg):
 
 
 # =====================================================================
+# 1B) 9:16 YOUTUBE SHORTS & FACEBOOK REELS CUSTOM MINIATURE (1080x1920)
+# Uses 4 V22.3 Themes x 3 Vertical Poster Layouts (high-CTR mobile grid!)
+# =====================================================================
+def _fit_map_box(x, y, w, h, arena):
+    ratio = 1.78 if arena == "world" else (1.42 if arena == "us_states" else 1.35)
+    if (w / max(1.0, float(h))) > ratio:
+        nw = int(h * ratio)
+        return (x + (w - nw) // 2, y, nw, h)
+    nh = int(w / ratio)
+    return (x, y + (h - nh) // 2, w, nh)
+
+
+def render_short_thumbnail_9x16(sim, out_jpg):
+    """Render a bold, ultra-readable 1080x1920 (9:16) vertical poster thumbnail for Shorts & FB Reels."""
+    W, H = 1080, 1920
+    sc = sim["scenario"]
+    th = get_theme_for_scenario(sc)
+    layout = get_layout_variant(sc)
+    geom = load_arena_geometry(sc["arena"])
+    bg = make_themed_bg(W, H, theme=th, seed=88)
+    arr = np.array(bg, dtype=np.uint8)
+
+    ents = sim["entities"]
+    total = len(ents)
+    status_map = {}
+    for i, e in enumerate(ents):
+        u = i / max(1, total - 1)
+        if u > 0.85:
+            status_map[e["name"]] = "alive"
+        elif u > 0.72:
+            status_map[e["name"]] = "warning"
+        elif u > 0.60:
+            status_map[e["name"]] = "just_fell"
+        else:
+            status_map[e["name"]] = "eliminated"
+
+    top_txt = sc.get("thumb_top", "ZERO POWER. 50 STATES.")[:28]
+    pill_txt = sc.get("thumb_pill", "1 SURVIVES")[:14]
+    stamp_txt = sc.get("thumb_stamp", f"{total - 1} ELIMINATED")
+    unit = "STATES" if sc["arena"] == "us_states" else "NATIONS"
+
+    if layout == 1:
+        # VERTICAL LAYOUT 1: Dramatic Map Upper Canvas + Heavy Center-Bottom Magazine Block
+        map_box = _fit_map_box(36, 210, W - 72, 760, sc["arena"])
+        draw_paper_cut_map_cv(arr, geom, map_box, status_map, shadow_offset=(10, 12), border_w=3, theme=th)
+        draw_mechanic_overlay_cv(arr, sc, map_box, progress=0.68, theme=th)
+
+        img = Image.fromarray(arr, "RGB").convert("RGBA")
+        draw = ImageDraw.Draw(img, "RGBA")
+
+        # Top slim ticker strip
+        draw.rectangle([0, 0, W, 138], fill=th["ink_black"] + (255,))
+        draw.rectangle([0, 138, W, 150], fill=th["vermilion"] + (255,))
+        draw.text((W // 2, 69), f"LAST MAP STANDING  //  {total} {unit}", font=get_font(FONT_MONO, 32), fill=th["warning_ochre"] + (255,), anchor="mm")
+
+        # Bottom heavy Swiss poster typography block
+        blk_y0 = 1040
+        draw.rectangle([0, blk_y0, W, H], fill=th["ink_black"] + (255,))
+        draw.rectangle([0, blk_y0 - 14, W, blk_y0], fill=th["vermilion"] + (255,))
+
+        f_big = get_font(FONT_ANTON, 134)
+        lines = _wrap_headline(draw, top_txt, f_big, W - 150)
+        while len(lines) > 2 and f_big.size > 90:
+            f_big = get_font(FONT_ANTON, f_big.size - 8)
+            lines = _wrap_headline(draw, top_txt, f_big, W - 150)
+        ty = blk_y0 + 72
+        for ln in lines[:2]:
+            draw.text((W // 2, ty), ln, font=f_big, fill=th["header_text"] + (255,), anchor="ma")
+            ty += int(f_big.size * 1.14)
+
+        py0 = max(ty + 46, 1480)
+        draw.rounded_rectangle([140, py0, W - 140, py0 + 148], radius=16, fill=th["vermilion"] + (255,))
+        draw.text((W // 2, py0 + 74), pill_txt, font=get_font(FONT_ANTON, 96), fill=th["header_text"] + (255,), anchor="mm")
+        draw.text((W // 2, H - 110), f"DAY 0 → DAY {sc.get('max_day', 365)}  •  ONLY 1 SURVIVES",
+                  font=get_font(FONT_MONO, 32), fill=th["warning_ochre"] + (255,), anchor="mm")
+
+        stamp = make_stamp_image(stamp_txt, w=520, h=126, angle=-9, theme=th)
+        img.alpha_composite(stamp, (W - stamp.width - 36, blk_y0 - stamp.height - 28))
+
+    elif layout == 2:
+        # VERTICAL LAYOUT 2: Giant Top Stacked Poster Banner + Centered High-Impact Map + Bottom CTA Pill
+        map_box = _fit_map_box(36, 650, W - 72, 780, sc["arena"])
+        draw_paper_cut_map_cv(arr, geom, map_box, status_map, shadow_offset=(10, 12), border_w=3, theme=th)
+        draw_mechanic_overlay_cv(arr, sc, map_box, progress=0.68, theme=th)
+
+        img = Image.fromarray(arr, "RGB").convert("RGBA")
+        draw = ImageDraw.Draw(img, "RGBA")
+
+        draw.rectangle([0, 0, W, 560], fill=th["ink_black"] + (255,))
+        draw.rectangle([0, 560, W, 578], fill=th["vermilion"] + (255,))
+        draw.text((64, 72), f"MAP SIMULATION  //  {total} {unit}", font=get_font(FONT_MONO, 32), fill=th["warning_ochre"] + (255,))
+
+        f_big = get_font(FONT_ANTON, 146)
+        lines = _wrap_headline(draw, top_txt, f_big, W - 128)
+        while len(lines) > 2 and f_big.size > 96:
+            f_big = get_font(FONT_ANTON, f_big.size - 8)
+            lines = _wrap_headline(draw, top_txt, f_big, W - 128)
+        ty = 148
+        for ln in lines[:2]:
+            draw.text((64, ty), ln, font=f_big, fill=th["header_text"] + (255,))
+            ty += int(f_big.size * 1.14)
+
+        # Bottom massive pill + footer bar
+        draw.rectangle([0, H - 340, W, H], fill=th["ink_black"] + (255,))
+        draw.rectangle([0, H - 354, W, H - 340], fill=th["vermilion"] + (255,))
+        draw.rounded_rectangle([120, H - 286, W - 120, H - 142], radius=16, fill=th["vermilion"] + (255,))
+        draw.text((W // 2, H - 214), pill_txt, font=get_font(FONT_ANTON, 94), fill=th["header_text"] + (255,), anchor="mm")
+        draw.text((W // 2, H - 72), "LAST MAP STANDING  •  DATA SIMULATION",
+                  font=get_font(FONT_MONO, 30), fill=th["warning_ochre"] + (255,), anchor="mm")
+
+        stamp = make_stamp_image(stamp_txt, w=540, h=130, angle=9, theme=th)
+        img.alpha_composite(stamp, (W - stamp.width - 36, H - 360 - stamp.height - 16))
+
+    else:
+        # VERTICAL LAYOUT 0: Classic Saul Bass Editorial Header + Center Map + Huge Bottom Verdict Strip
+        map_box = _fit_map_box(36, 560, W - 72, 820, sc["arena"])
+        draw_paper_cut_map_cv(arr, geom, map_box, status_map, shadow_offset=(10, 12), border_w=3, theme=th)
+        draw_mechanic_overlay_cv(arr, sc, map_box, progress=0.68, theme=th)
+
+        img = Image.fromarray(arr, "RGB").convert("RGBA")
+        draw = ImageDraw.Draw(img, "RGBA")
+
+        draw.rectangle([0, 0, W, 490], fill=th["ink_black"] + (255,))
+        draw.rectangle([0, 490, W, 508], fill=th["vermilion"] + (255,))
+
+        # Centered huge pill at top + bold title with clean breathing margin above red bar
+        draw.rounded_rectangle([250, 42, W - 250, 138], radius=14, fill=th["vermilion"] + (255,))
+        draw.text((W // 2, 90), pill_txt, font=get_font(FONT_ANTON, 70), fill=th["header_text"] + (255,), anchor="mm")
+
+        f_big = get_font(FONT_ANTON, 122)
+        lines = _wrap_headline(draw, top_txt, f_big, W - 130)
+        while len(lines) > 2 and f_big.size > 86:
+            f_big = get_font(FONT_ANTON, f_big.size - 8)
+            lines = _wrap_headline(draw, top_txt, f_big, W - 130)
+        ty = 166 if len(lines) == 2 else 236
+        for ln in lines[:2]:
+            draw.text((W // 2, ty), ln, font=f_big, fill=th["header_text"] + (255,), anchor="ma")
+            ty += int(f_big.size * 1.14)
+
+        stamp = make_stamp_image(stamp_txt, w=540, h=132, angle=10, theme=th)
+        img.alpha_composite(stamp, (W - stamp.width - 42, 1340))
+
+        draw.rectangle([0, H - 240, W, H], fill=th["ink_black"] + (255,))
+        draw.rectangle([0, H - 252, W, H - 240], fill=th["vermilion"] + (255,))
+        draw.text((W // 2, H - 146), f"ONLY 1 OF {total} {unit} SURVIVES",
+                  font=get_font(FONT_ANTON, 72), fill=th["header_text"] + (255,), anchor="mm")
+        draw.text((W // 2, H - 64), "LAST MAP STANDING  //  REAL DATA SIMULATION",
+                  font=get_font(FONT_MONO, 28), fill=th["warning_ochre"] + (255,), anchor="mm")
+
+    img.convert("RGB").save(out_jpg, quality=94, optimize=True)
+    return out_jpg
+
+
+# =====================================================================
 # 2) 9:16 VERTICAL SHORT RENDERER (V22.3 MULTI-THEME, 30FPS)
 # =====================================================================
 def render_short_9x16(sim, words, audio_m4a, total_dur, out_mp4, fps=30):
