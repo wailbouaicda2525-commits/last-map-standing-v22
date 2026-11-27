@@ -1,25 +1,24 @@
-name: Last Map Standing — 4x/Day RANDOM TikTok 65s+ PUBLIC Autopilot (Buffer Free)
+name: Last Map Standing — 3x/Day RANDOM TikTok 65s+ PUBLIC Autopilot (Buffer Free)
 
 on:
   # schedule: disabled (triggered on-time via cron-job.org workflow_dispatch)
     # Launches once daily at 06:11 UTC (07:11 Algeria/Paris), then uses OS-random human spacing
-    # for 4x PUBLIC Creator Rewards videos (64-70s + FINAL 2 VS Showdown) with NO fixed clock:
-    #   Example Day 1: +0h42m -> gap +4h35m -> gap +3h10m -> gap +5h08m -> (~10h25m overnight!)
-    #   Example Day 2: +1h54m -> gap +3h22m -> gap +5h14m -> gap +4h09m -> (~9h21m overnight!)
-    # Uses max 4 of 10 rolling Buffer Free queue slots -> 120+ PUBLIC TikToks/month for $0 FOREVER!
-    # - cron: '11 6 * * *'
+    # for 3x PUBLIC V23 Geo-Cinema Satellite videos (64-70s + FINAL 2 VS Showdown) with NO fixed clock:
+    #   Example Day 1: +0h42m -> gap +4h35m -> gap +5h50m -> (~12h50m overnight!)
+    #   Example Day 2: +1h54m -> gap +6h12m -> gap +3h48m -> (~12h06m overnight!)
+    # Uses max 3 of 10 rolling Buffer Free queue slots -> 90+ PUBLIC TikToks/month for $0 FOREVER!
   workflow_dispatch:
     inputs:
       count:
-        description: 'Number of PUBLIC TikTok 64-70s videos to generate & randomly schedule (default 4)'
+        description: 'Number of PUBLIC TikTok 64-70s videos to generate & randomly schedule (default 3)'
         required: false
-        default: '4'
+        default: '3'
         type: choice
         options:
-          - '4'
+          - '3'
           - '1'
           - '2'
-          - '3'
+          - '4'
           - '5'
       scenario_id:
         description: 'Optional specific scenario_id for Video #1 (leave blank for auto-next)'
@@ -45,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: pip install --no-cache-dir -r requirements.txt
 
-      - name: Generate 4x 64-70s Creator Rewards Videos & Randomly Schedule PUBLIC via Buffer Free
+      - name: Generate 3x V23 Geo-Cinema Satellite 64-70s Videos & Randomly Schedule PUBLIC via Buffer Free
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
           BUFFER_TIKTOK_CHANNEL_ID: ${{ secrets.BUFFER_TIKTOK_CHANNEL_ID }}
@@ -59,14 +58,14 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           CNT="${{ github.event.inputs.count }}"
-          [ -z "$CNT" ] && CNT="4"
+          [ -z "$CNT" ] && CNT="3"
           EXTRA=""
           if [ -n "${{ github.event.inputs.scenario_id }}" ]; then
             EXTRA="--scenario-id ${{ github.event.inputs.scenario_id }}"
           fi
           python3 run_daily_v22.py --mode tiktok --count "$CNT" --out-dir tiktok_out $EXTRA
 
-      - name: Upload All 4 Videos + 9:16 Covers + SEO Captions as Backup Artifact (7 days)
+      - name: Upload All 3 Videos + 9:16 Satellite Covers + SEO Captions as Backup Artifact (7 days)
         uses: actions/upload-artifact@v4
         with:
           name: tiktok-public-batch-${{ github.run_number }}
@@ -83,5 +82,5 @@ jobs:
           git config user.email "bot@lastmapstanding.local"
           git pull --rebase origin main || true
           git add published_history.json
-          git diff --staged --quiet || git commit -m "chore: log 4x RANDOM TikTok PUBLIC 64-70s batch [skip ci]"
+          git diff --staged --quiet || git commit -m "chore: log 3x RANDOM V23 TikTok PUBLIC 64-70s batch [skip ci]"
           git push
