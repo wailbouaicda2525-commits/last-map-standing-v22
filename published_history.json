@@ -1,11 +1,13 @@
 {
   "published_ids": [
-    "short:us_zero_electricity"
+    "short:us_zero_electricity",
+    "fb_carousel:world_oil_vanishes"
   ],
   "published_titles": [
-    "If Every U.S. State Lost Electricity Tomorrow \u2014 Only 1 Survives"
+    "If Every U.S. State Lost Electricity Tomorrow \u2014 Only 1 Survives",
+    "If Oil Disappeared From Earth Tomorrow \u2014 Only 1 Country Survives"
   ],
-  "count": 1,
-  "last_updated_utc": "2026-11-27T12:20:09.506218+00:00",
-  "last_video_id": "Ea0BYMkyC-s"
+  "count": 2,
+  "last_updated_utc": "2026-11-27T13:32:57.996520+00:00",
+  "last_video_id": "1499892453201799_122095974555569169"
 }
