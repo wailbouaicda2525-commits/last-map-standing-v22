@@ -64,8 +64,10 @@ jobs:
               slot = "12:19"
           elif hr in (15, 16, 17, 18):
               slot = "16:19"
-          else:
+          elif hr in (19, 20, 21, 22):
               slot = "21:19"
+          else:
+              slot = "offslot"
 
           if mode != "auto":
               run_now = "true"
