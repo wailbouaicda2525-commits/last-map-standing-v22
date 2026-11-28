@@ -595,8 +595,8 @@ def render_short_9x16(
         "-s", f"{W}x{H}", "-r", str(fps), "-i", "pipe:0",
         "-i", mixed_audio_path,
         "-map", "0:v:0", "-map", "1:a:0",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "19", "-pix_fmt", "yuv420p",
-        "-c:a", "copy", "-shortest", "-movflags", "+faststart",
+        "-c:v", "libx264", "-profile:v", "high", "-level:v", "4.1", "-preset", "veryfast", "-crf", "19", "-pix_fmt", "yuv420p",
+        "-c:a", "copy", "-map_metadata", "-1", "-fflags", "+bitexact", "-shortest", "-movflags", "+faststart",
         out_mp4,
     ]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
@@ -793,8 +793,8 @@ def render_longform_16x9(
         "-s", f"{W}x{H}", "-r", str(fps), "-i", "pipe:0",
         "-i", mixed_audio_path,
         "-map", "0:v:0", "-map", "1:a:0",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
-        "-c:a", "copy", "-shortest", "-movflags", "+faststart",
+        "-c:v", "libx264", "-profile:v", "high", "-level:v", "4.1", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+        "-c:a", "copy", "-map_metadata", "-1", "-fflags", "+bitexact", "-shortest", "-movflags", "+faststart",
         out_mp4,
     ]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)

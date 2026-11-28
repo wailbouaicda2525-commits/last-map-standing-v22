@@ -323,50 +323,38 @@ def run_fb_text(cfg, sim, dry_run=False):
 
 def generate_random_tiktok_delays(n_batch):
     """
-    Generate 100% unpredictable, human-like random publish delays (in minutes from batch start)
-    for TikTok PUBLIC autopilot (uses OS entropy via SystemRandom -> no two days ever repeat!).
-    Example for n_batch=4:
-      Start +42m -> gap +4h 35m -> gap +3h 10m -> gap +5h 08m -> (~10h 25m random overnight gap!)
-    Single manual test (n_batch=1) posts immediately (0 min).
+    Generate 100% unpredictable, human-like random publish delays (in minutes from batch start at ~06:11 UTC)
+    targeting US/EU PRIME PEAK HOURS (12:00-23:00 UTC = 7:00 AM-6:00 PM EST / 13:00-00:00 Algeria)!
+    Uses OS entropy (SystemRandom) so NO two days ever post at the same time — even when n_batch == 1!
     """
-    if n_batch <= 1:
-        return [0]
-
     rng = random.SystemRandom()
-    # Random start offset for Video #1 so even the first daily post never lands on the same minute
-    first_delay = 0 if rng.random() < 0.20 else rng.randint(15, 135)
+
+    if n_batch <= 1:
+        # Random US/EU Prime Peak slot: +6h15m to +14h20m from 06:11 UTC -> lands between 12:26 and 20:31 UTC!
+        return [rng.randint(375, 860)]
 
     if n_batch == 2:
-        gaps = [rng.randint(240, 540)]  # 4h00m - 9h00m
-        max_span = 720
-    elif n_batch == 3:
-        gaps = [rng.randint(185, 345), rng.randint(235, 455)]
-        rng.shuffle(gaps)
-        max_span = 960  # <= 16h span -> leaves ~8h-12h random overnight pause
-    elif n_batch == 4:
-        # Mirrors exact organic human rhythm: e.g. 4h35m, 3h10m, 5h08m + ~10h overnight!
-        gaps = [
-            rng.randint(160, 235),  # ~2h40m - 3h55m (e.g. 3h10m)
-            rng.randint(220, 310),  # ~3h40m - 5h10m (e.g. 4h35m)
-            rng.randint(255, 365),  # ~4h15m - 6h05m (e.g. 5h08m)
-        ]
-        rng.shuffle(gaps)
-        max_span = 930  # <= 15h30m span -> leaves ~8h30m-11h30m random overnight rest!
-    else:
-        gaps = [rng.randint(150, 255) for _ in range(n_batch - 1)]
-        rng.shuffle(gaps)
-        max_span = 1020
+        # Video 1: US Morning/Midday (~12:00-15:30 UTC) | Video 2: US Late Afternoon/Evening (+5h15m..+7h50m)
+        first_delay = rng.randint(350, 560)
+        gap = rng.randint(315, 470)
+        return [first_delay, min(1050, first_delay + gap)]
 
-    # Keep total daily window strictly under max_span so today's last post never collides with tomorrow
-    if sum(gaps) > max_span:
-        scale = max_span / float(sum(gaps))
-        gaps = [max(135, int(round(g * scale))) for g in gaps]
+    if n_batch == 3:
+        # Spread organically across US Morning -> Afternoon -> Evening (11:30 UTC .. 23:30 UTC)
+        first_delay = rng.randint(315, 435)
+        gaps = [rng.randint(235, 345), rng.randint(245, 365)]
+        rng.shuffle(gaps)
+        d1 = first_delay
+        d2 = d1 + gaps[0]
+        d3 = min(1070, d2 + gaps[1])
+        return [d1, d2, d3]
 
+    # 4-5 manual override
+    first_delay = rng.randint(180, 300)
     delays = [first_delay]
-    for g in gaps:
-        delays.append(delays[-1] + g)
+    for _ in range(n_batch - 1):
+        delays.append(min(1080, delays[-1] + rng.randint(175, 265)))
     return delays
-
 
 def run_tiktok_65s(cfg, sim, out_dir, dry_run=False, batch_idx=1, batch_total=1, delay_minutes=0):
     """

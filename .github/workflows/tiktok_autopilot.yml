@@ -1,20 +1,22 @@
-name: Last Map Standing — TikTok 65s+ PUBLIC Autopilot (Buffer Free, Warm-Up Safe 1-3x/Day)
+name: Last Map Standing — TikTok 65s+ PUBLIC Autopilot (30-Day Auto Warm-Up -> 3x/Day)
 
 on:
-  # schedule: disabled (triggered on-time via cron-job.org workflow_dispatch)
-    # Launches once daily at 06:11 UTC (07:11 Algeria/Paris), then uses OS-random human spacing
-    # for 3x PUBLIC V23 Geo-Cinema Satellite videos (64-70s + FINAL 2 VS Showdown) with NO fixed clock:
-    #   Example Day 1: +0h42m -> gap +4h35m -> gap +5h50m -> (~12h50m overnight!)
-    #   Example Day 2: +1h54m -> gap +6h12m -> gap +3h48m -> (~12h06m overnight!)
-    # Uses max 3 of 10 rolling Buffer Free queue slots -> 90+ PUBLIC TikToks/month for $0 FOREVER!
+  # schedule: disabled (triggered daily at 06:11 UTC via cron-job.org #8960551 with count='auto')
+  # AUTOMATIC 30-DAY TIKTOK ANTI-BOT WARM-UP RAMP (anchor: 2026-11-28):
+  #   - Days 0-2  (Nov 28 - Nov 30): 0 videos/day (72h cooldown reset — skips in 2 seconds!)
+  #   - Days 3-9  (Dec 01 - Dec 07): 1 video every 2 days (Dec 1, 3, 5, 7) at random US Peak Time
+  #   - Days 10-17 (Dec 08 - Dec 15): 1 video/day at random US Peak Time (12:26 - 20:31 UTC)
+  #   - Days 18-27 (Dec 16 - Dec 25): 2 videos/day (random 5h-8h spacing across US Peak Hours)
+  #   - Day  28+  (Dec 26+):          3 videos/day FULL CRUISE (random US/EU Peak spacing)
   workflow_dispatch:
     inputs:
       count:
-        description: 'Number of PUBLIC TikTok 64-70s videos to generate & schedule (default 1 warm-up safe)'
+        description: "Publish mode: 'auto' (30-Day Smart Warm-Up) or manual override '1'..'5'"
         required: false
-        default: '1'
+        default: 'auto'
         type: choice
         options:
+          - 'auto'
           - '1'
           - '2'
           - '3'
@@ -33,18 +35,68 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
+      - name: Evaluate 30-Day TikTok Anti-Bot Warm-Up Schedule
+        id: warmup
+        shell: python3 {0}
+        env:
+          REQ_COUNT: ${{ github.event.inputs.count || 'auto' }}
+        run: |
+          import os, datetime
+          req = (os.environ.get("REQ_COUNT") or "auto").strip().lower()
+          today = datetime.datetime.now(datetime.timezone.utc).date()
+          anchor = datetime.date(2026, 11, 28)
+          day_num = (today - anchor).days
+
+          if req != "auto" and req.isdigit():
+              cnt = int(req)
+              phase = f"MANUAL OVERRIDE (count={cnt})"
+          else:
+              if day_num < 3:
+                  # Nov 28, 29, 30 -> 72h clean cooldown (0 API posts)
+                  cnt = 0
+                  phase = f"Phase 0 Cooldown Reset (Day {day_num}/2 — resumes Dec 1)"
+              elif day_num <= 9:
+                  # Dec 1, 3, 5, 7 -> 1 video every 2 days!
+                  cnt = 1 if (day_num % 2 == 1) else 0
+                  phase = f"Phase 1 Gentle Warm-Up (Day {day_num}: 1 video every 2 days)"
+              elif day_num <= 17:
+                  # Dec 8 - Dec 15 -> 1 video/day
+                  cnt = 1
+                  phase = f"Phase 2 Steady Trust (Day {day_num}: 1 video/day)"
+              elif day_num <= 27:
+                  # Dec 16 - Dec 25 -> 2 videos/day
+                  cnt = 2
+                  phase = f"Phase 3 Growth Scale (Day {day_num}: 2 videos/day)"
+              else:
+                  # Dec 26+ -> Full 3 videos/day cruise!
+                  cnt = 3
+                  phase = f"Phase 4 Full Cruise (Day {day_num}: 3 videos/day)"
+
+          print(f"[TIKTOK AUTO WARM-UP] Date={today} | {phase} -> count={cnt}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"count={cnt}\n")
+              out.write(f"phase={phase}\n")
+          gh_sum = os.environ.get("GITHUB_STEP_SUMMARY")
+          if gh_sum:
+              with open(gh_sum, "a") as sf:
+                  sf.write(f"### 🔥 TikTok 30-Day Auto Warm-Up Gate\n- **Date (UTC):** `{today}`\n- **Stage:** `{phase}`\n- **Videos today:** `{cnt}`\n")
+
       - name: Checkout repository
+        if: steps.warmup.outputs.count != '0'
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
+        if: steps.warmup.outputs.count != '0'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
+        if: steps.warmup.outputs.count != '0'
         run: pip install --no-cache-dir -r requirements.txt
 
-      - name: Generate 3x V23 Geo-Cinema Satellite 64-70s Videos & Randomly Schedule PUBLIC via Buffer Free
+      - name: Generate V23 Geo-Cinema Satellite 64-70s Videos & Schedule Randomly in US Peak Hours
+        if: steps.warmup.outputs.count != '0'
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
           BUFFER_TIKTOK_CHANNEL_ID: ${{ secrets.BUFFER_TIKTOK_CHANNEL_ID }}
@@ -57,15 +109,15 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          CNT="${{ github.event.inputs.count }}"
-          [ -z "$CNT" ] && CNT="1"
+          CNT="${{ steps.warmup.outputs.count }}"
           EXTRA=""
           if [ -n "${{ github.event.inputs.scenario_id }}" ]; then
             EXTRA="--scenario-id ${{ github.event.inputs.scenario_id }}"
           fi
           python3 run_daily_v22.py --mode tiktok --count "$CNT" --out-dir tiktok_out $EXTRA
 
-      - name: Upload All 3 Videos + 9:16 Satellite Covers + SEO Captions as Backup Artifact (7 days)
+      - name: Upload Videos + 9:16 Covers + Captions as Backup Artifact (7 days)
+        if: steps.warmup.outputs.count != '0'
         uses: actions/upload-artifact@v4
         with:
           name: tiktok-public-batch-${{ github.run_number }}
@@ -77,5 +129,6 @@ jobs:
           retention-days: 7
 
       - name: Commit published_history.json
+        if: steps.warmup.outputs.count != '0'
         run: |
-          python3 safe_push_history.py "chore: log 3x RANDOM V23 TikTok PUBLIC 64-70s batch [skip ci]"
+          python3 safe_push_history.py "chore: log TikTok warm-up batch [skip ci]"
