@@ -8,7 +8,10 @@
     "fb_text:us_zero_electricity",
     "tiktok:us_zero_electricity",
     "tiktok:world_cargo_ships_stop",
-    "tiktok:us_zero_imports"
+    "tiktok:us_zero_imports",
+    "tiktok:world_earth_freezes",
+    "tiktok:us_50k_salary",
+    "tiktok:world_never_rains"
   ],
   "published_titles": [
     "If Every U.S. State Lost Electricity Tomorrow \u2014 Only 1 Survives",
@@ -19,9 +22,12 @@
     "If Every U.S. State Lost Electricity Tomorrow \u2014 Only 1 Survives",
     "If Every U.S. State Lost Electricity Tomorrow \u2014 Only 1 Survives",
     "Every Cargo Ship Stops Forever \u2014 Watch Global Trade Collapse",
-    "What Happens If Every U.S. State Seals Its Borders Forever?"
+    "What Happens If Every U.S. State Seals Its Borders Forever?",
+    "Earth Drops -25\u00b0C Overnight \u2014 Which Country Keeps the Grid Alive?",
+    "Living on $50,000 a Year Across All 50 States \u2014 Where Do You Last?",
+    "If Rain Stopped Forever on Earth, Which Country Runs Out Last?"
   ],
-  "count": 9,
-  "last_updated_utc": "2026-11-27T23:04:54.365774+00:00",
-  "last_video_id": "6b0a0c952a2e4f66caddd207"
+  "count": 12,
+  "last_updated_utc": "2026-11-28T06:19:06.446415+00:00",
+  "last_video_id": "6b0a7259db8a1c14ef0c0e8a"
 }
