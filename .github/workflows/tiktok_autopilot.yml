@@ -1,4 +1,4 @@
-name: Last Map Standing — 3x/Day RANDOM TikTok 65s+ PUBLIC Autopilot (Buffer Free)
+name: Last Map Standing — TikTok 65s+ PUBLIC Autopilot (Buffer Free, Warm-Up Safe 1-3x/Day)
 
 on:
   # schedule: disabled (triggered on-time via cron-job.org workflow_dispatch)
@@ -10,14 +10,14 @@ on:
   workflow_dispatch:
     inputs:
       count:
-        description: 'Number of PUBLIC TikTok 64-70s videos to generate & randomly schedule (default 3)'
+        description: 'Number of PUBLIC TikTok 64-70s videos to generate & schedule (default 1 warm-up safe)'
         required: false
-        default: '3'
+        default: '1'
         type: choice
         options:
-          - '3'
           - '1'
           - '2'
+          - '3'
           - '4'
           - '5'
       scenario_id:
@@ -58,7 +58,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           CNT="${{ github.event.inputs.count }}"
-          [ -z "$CNT" ] && CNT="3"
+          [ -z "$CNT" ] && CNT="1"
           EXTRA=""
           if [ -n "${{ github.event.inputs.scenario_id }}" ]; then
             EXTRA="--scenario-id ${{ github.event.inputs.scenario_id }}"

@@ -348,19 +348,76 @@ def upload_tiktok_inbox_draft(video_path):
 # =====================================================================
 def build_tiktok_seo_caption(sim):
     """
-    High-Search-Value English TikTok caption optimized for 2026 Creator Rewards RPM
-    and Buffer's 5-hashtag TikTok rule.
+    Organic, anti-spam TikTok caption generator (zero copy-paste template fingerprint!).
+    Rotates across 10 natural human hook/CTA styles and topic-matched 4-5 hashtag combinations
+    strictly respecting Buffer's 5-hashtag TikTok limit.
     """
+    import hashlib as _hl
+
     sc = sim["scenario"]
     total = sim["total"]
     max_d = sc.get("max_day", 365)
     f1 = sim["first_out"][0]["name"].replace("United States of America", "the US")
-    unit = "US states" if sc["arena"] == "us_states" else "countries"
-    arena_tag = "#usstates" if sc["arena"] == "us_states" else "#worldmap"
+    winner = (sim.get("survivors") or sim.get("last_standing") or [{}])
+    is_us = (sc.get("arena") == "us_states")
+    unit = "US states" if is_us else "countries"
+    place_word = "state" if is_us else "country"
+    title = str(sc.get("title_short") or "Map Survival Simulation").strip()
+    sid = str(sc.get("id") or title)
+    seed = int(_hl.sha256(sid.encode("utf-8")).hexdigest()[:8], 16)
 
-    return (
-        f"{sc['title_short']} 🗺️⚡\n\n"
-        f"{f1} falls FIRST — and out of {total} {unit}, only ONE survives to Day {max_d}.\n"
-        f"Did YOUR home survive? Drop your state or country below 👇\n\n"
-        f"#mapsimulation #whatif #geography {arena_tag} #lastmapstanding"
+    openers = [
+        f"{title}",
+        f"Wait until you see who goes out first… {title}",
+        f"I simulated this across all {total} {unit}: {title}",
+        f"Most people guess wrong on this one — {title}",
+        f"Day 1 to Day {max_d}: {title}",
+        f"Could your {place_word} actually make it to Day {max_d}? {title}",
+        f"Watch how fast {f1} collapses here — {title}",
+        f"Nobody expected {f1} to fall first. {title}",
+        f"Out of {total} {unit}, almost everyone gets eliminated before Day {max_d}.",
+        f"This map simulation gets wild after Day 90: {title}",
+    ]
+    ctas = [
+        f"How many days did your {place_word} last?",
+        f"Did your {place_word} make the final 5 or fall early?",
+        f"Comment your {place_word} — be honest, did you expect that?",
+        f"Would you survive where you live right now?",
+        f"Tell me which {place_word} surprised you the most.",
+        f"Did {f1} deserve to go out first or was that harsh?",
+        f"Drop your {place_word} below and check what day it fell.",
+        f"Who did you think was winning before the final showdown?",
+        f"What scenario should we run on the map next?",
+        f"Be honest — did you think your {place_word} was winning this?",
+    ]
+
+    # Topic-matched rotating hashtags (strictly 4-5 tags total, no identical repeated block!)
+    tl = title.lower()
+    topic_tags = []
+    if any(k in tl for k in ["money", "$", "salary", "rent", "rich", "economy", "tax", "inflation", "debt"]):
+        topic_tags = ["#economics", "#personalfinance", "#moneyfacts"]
+    elif any(k in tl for k in ["cold", "freeze", "heat", "rain", "water", "flood", "ice", "storm", "sun", "climate"]):
+        topic_tags = ["#climate", "#sciencefacts", "#survival"]
+    elif any(k in tl for k in ["power", "electric", "grid", "internet", "blackout", "oil", "fuel", "food"]):
+        topic_tags = ["#survival", "#whatifscenario", "#infrastructure"]
+    elif any(k in tl for k in ["border", "war", "island", "invasion", "empire", "zombie"]):
+        topic_tags = ["#geopolitics", "#historyfacts", "#whatif"]
+    else:
+        topic_tags = ["#geographyfacts", "#worlddata", "#whatif"]
+
+    core_pools = (
+        [["#usgeography", "#50states", "#americamap"], ["#usstates", "#maptok", "#dataviz"], ["#unitedstates", "#geographytok", "#mapsimulation"]]
+        if is_us else
+        [["#worldmap", "#geographytok", "#maptok"], ["#worldgeography", "#dataviz", "#countries"], ["#mapsimulation", "#globaldata", "#geography"]]
     )
+    pool = core_pools[seed % len(core_pools)]
+    t_tag = topic_tags[(seed // 3) % len(topic_tags)]
+    tags = []
+    for tg in [pool[0], pool[1], t_tag, pool[2], "#lastmapstanding"]:
+        if tg not in tags:
+            tags.append(tg)
+    tags = tags[:5]
+
+    opener = openers[seed % len(openers)]
+    cta = ctas[(seed // 7) % len(ctas)]
+    return f"{opener}\n\n{cta}\n\n{' '.join(tags)}"
