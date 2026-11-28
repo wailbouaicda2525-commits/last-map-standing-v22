@@ -1,13 +1,22 @@
-name: Last Map Standing — Daily Shorts + FB Reels Autopilot (2x/day US Peak)
+name: Last Map Standing — YT Shorts + FB Reels Auto-Scale (2->3->4/Day US Peak)
 
 on:
-  # schedule: disabled (triggered on-time via cron-job.org workflow_dispatch)
-    # 2x/day US Prime-Time Peak (YouTube Shorts + Facebook Reels together):
-    #   16:19 UTC = 11:19 AM EST / 8:19 AM PST (US Lunch + West Coast Morning)
-    #   21:19 UTC =  4:19 PM EST / 1:19 PM PST (US After-Work / Evening Peak)
-    # - cron: '19 16,21 * * *'
+  # Triggered at 4 US/EU Peak slots via cron-job.org #8960547 (00:19, 12:19, 16:19, 21:19 UTC) with mode='auto'
+  # AUTOMATIC 30-DAY GROWTH RAMP FOR LAST MAP STANDING YT SHORTS + FB REELS (anchor: 2026-11-28):
+  #   - Days 0-6   (Nov 28 - Dec 04): 2/day -> runs slots 16:19 & 21:19 UTC (skips 00:19 & 12:19 in 2s!)
+  #   - Days 7-20  (Dec 05 - Dec 18): 3/day -> runs slots 12:19, 16:19 & 21:19 UTC (skips 00:19 in 2s!)
+  #   - Day  21+   (Dec 19+):         4/day -> ALL 4 slots 00:19, 12:19, 16:19 & 21:19 UTC FULL CRUISE!
+  # (Note: TikTok @lastmapstanding has its own 30-day warm-up ramp 0->1/2d->1/d->2/d->3/d in tiktok_autopilot.yml!)
   workflow_dispatch:
     inputs:
+      mode:
+        description: "Gate mode: 'auto' (2->3->4/day Auto-Scale) or 'force' (always publish now)"
+        required: false
+        default: 'force'
+        type: choice
+        options:
+          - 'auto'
+          - 'force'
       scenario_id:
         description: 'Optional specific scenario_id (leave blank for auto-next)'
         required: false
@@ -25,23 +34,79 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: lms-short-autopilot
+  cancel-in-progress: false
+
 jobs:
   publish_short:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
+      - name: Evaluate MAPS YT Shorts + FB Reels Auto-Scale Gate
+        id: scale
+        shell: python3 {0}
+        env:
+          GATE_MODE: ${{ github.event.inputs.mode || 'force' }}
+        run: |
+          import os, datetime
+          mode = (os.environ.get("GATE_MODE") or "force").strip().lower()
+          now = datetime.datetime.now(datetime.timezone.utc)
+          today = now.date()
+          hr = now.hour
+          anchor = datetime.date(2026, 11, 28)
+          day_num = max(0, (today - anchor).days)
+
+          # Classify incoming UTC hour into one of the 4 scheduled slots (tolerates +/-1h cron drift)
+          if hr in (23, 0, 1, 2):
+              slot = "00:19"
+          elif hr in (11, 12, 13, 14):
+              slot = "12:19"
+          elif hr in (15, 16, 17, 18):
+              slot = "16:19"
+          else:
+              slot = "21:19"
+
+          if mode != "auto":
+              run_now = "true"
+              phase = f"MANUAL FORCE RUN (slot={slot} UTC)"
+          else:
+              if day_num <= 6:
+                  allowed = {"16:19", "21:19"}
+                  phase = f"Phase 1 Safe Launch (Day {day_num}/6 — Nov 28-Dec 4: 2/day)"
+              elif day_num <= 20:
+                  allowed = {"12:19", "16:19", "21:19"}
+                  phase = f"Phase 2 Momentum Ramp (Day {day_num}/20 — Dec 5-Dec 18: 3/day)"
+              else:
+                  allowed = {"00:19", "12:19", "16:19", "21:19"}
+                  phase = f"Phase 3 Full Cruise (Day {day_num} — Dec 19+: 4/day)"
+              run_now = "true" if slot in allowed else "false"
+
+          print(f"[MAPS AUTO-SCALE] Date={today} | UTC={now.strftime('%H:%M')} (slot={slot}) | {phase} -> run={run_now}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"run={run_now}\n")
+              out.write(f"phase={phase}\n")
+          gh_sum = os.environ.get("GITHUB_STEP_SUMMARY")
+          if gh_sum:
+              with open(gh_sum, "a") as sf:
+                  sf.write(f"### 🗺️ MAPS Auto-Scale Gate\n- **UTC:** `{now.strftime('%Y-%m-%d %H:%M')}` (slot `{slot}`)\n- **Stage:** `{phase}`\n- **Run this slot:** `{run_now}`\n")
+
       - name: Checkout repository
+        if: steps.scale.outputs.run == 'true'
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
+        if: steps.scale.outputs.run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
+        if: steps.scale.outputs.run == 'true'
         run: pip install --no-cache-dir -r requirements.txt
 
       - name: Generate & Publish Saul Bass Map Short + FB Reel
+        if: steps.scale.outputs.run == 'true'
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
@@ -62,5 +127,6 @@ jobs:
           python3 run_daily_v22.py --mode short --privacy "$PRIV" $EXTRA
 
       - name: Commit published_history.json (keeps 5+ year cron alive forever!)
+        if: steps.scale.outputs.run == 'true'
         run: |
           python3 safe_push_history.py "chore: log published Short [skip ci]"
